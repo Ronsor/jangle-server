@@ -24,6 +24,11 @@ type gwPacket struct {
 	Type string `json:"t"`
 }
 
+type gwPktMini struct {
+	Op int `json:"op"`
+	Data interface{} `json:"d"`
+}
+
 // OP_HELLO packet data
 type gwPktDataHello struct {
 	// Time in milliseconds

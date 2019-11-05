@@ -6,9 +6,9 @@ import (
 	"net/http"
 
 	"github.com/vharitonsky/iniflags"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"github.com/bwmarrin/snowflake"
+	"github.com/fasthttp/router"
+	"github.com/valyala/fasthttp"
 )
 
 const VERSION = "0.1.0/v6"
@@ -20,8 +20,6 @@ var (
 	flgGatewayUrl = flag.String("apiGatewayUrl", "", "Specify round-robin URL for Gateway v6")
 
 	flgNode = flag.Int64("node", 1, "Node ID")
-
-	flgEnableEchoBanner = flag.Bool("debugHideEchoBanner", true, "Hide banner for echo/v4 framework")
 )
 
 var flake *snowflake.Node
@@ -34,16 +32,13 @@ func main() {
 
 	flake, _ = snowflake.NewNode(*flgNode)
 
-	e := echo.New()
-	e.HideBanner = *flgEnableEchoBanner
-
-	e.Use(middleware.Recover())
+	r := router.New()
 
 	e.GET("/version.txt", func (c echo.Context) error { return c.String(http.StatusOK, VERSION); })
 
 	InitGateway(e)
 
-	e.Logger.Fatal(e.Start(*flgListen))
+	log.Fatal(fasthttp.ListenAndServe(*flgListen, r))
 	log.Println("info:", "shutting down...")
 }
 

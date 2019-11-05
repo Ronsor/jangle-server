@@ -34,8 +34,8 @@ bot.on("any", function(event) {
 	/*console.log(rawEvent)*/ //Logs every event
 });
 
-bot.on("disconnect", function() {
-	console.log("Bot disconnected");
+bot.on("disconnect", function(x) {
+	console.log("Bot disconnected", x);
 	/*bot.connect()*/ //Auto reconnect
 });
 

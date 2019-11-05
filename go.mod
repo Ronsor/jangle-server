@@ -9,6 +9,7 @@ require (
 	github.com/gorilla/mux v1.7.3
 	github.com/gorilla/websocket v1.4.1
 	github.com/labstack/echo/v4 v4.1.11
+	github.com/valyala/fasttemplate v1.1.0 // indirect
 	github.com/vharitonsky/iniflags v0.0.0-20180513140207-a33cd0b5f3de
 	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550 // indirect
 )

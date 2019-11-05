@@ -1468,7 +1468,6 @@ function APIRequest(method, url) {
 		opts = URL.parse(url);
 		opts.method = method;
 		opts.headers = headers;
-		console.log(url, opts);
 		req = requesters[opts.protocol.slice(0, -1)].request(opts, function(res) {
 			var chunks = [];
 			res.on('data', function(c) { chunks[chunks.length] = c; });
@@ -1685,6 +1684,7 @@ function getGateway(client, token) {
 			client._connecting = false;
 			return client.emit("disconnect", "Error GETing gateway:\n" + stringifyError(res), 0);
 		}
+			console.log(err, "ok");
 		return startConnection(client, (res.body.url + "/?encoding=json&v=" + GATEWAY_VERSION));
 	});
 }
