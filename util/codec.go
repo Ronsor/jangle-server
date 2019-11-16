@@ -1,8 +1,13 @@
 package util
 
 import (
-	"github.com/gorilla/websocket"
+	"errors"
+
+	"github.com/fasthttp/websocket"
+	"github.com/mitchellh/mapstructure"
 )
+
+const WSCHAN_NOMSG = "WsChan: no message in queue"
 
 type Codec interface {
 	Send(*websocket.Conn, interface{}) error
@@ -22,9 +27,9 @@ func (j *JsonCodec) Recv(ws *websocket.Conn, i interface{}) error {
 type WsChan struct {
 	Conn *websocket.Conn
 	Codec Codec
-	Send chan interface{}
-	Recv chan interface{}
-	Close chan interface{}
+	sendChan chan interface{}
+	recvChan chan interface{}
+	getError error
 	Closed bool
 }
 
@@ -32,13 +37,51 @@ func MakeWsChan(ws *websocket.Conn, c Codec) *WsChan {
 	w := &WsChan{
 		Conn: ws,
 		Codec: c,
-		Send: make(chan interface{}, 32),
-		Recv: make(chan interface{}, 4),
+		sendChan: make(chan interface{}, 32),
+		recvChan: make(chan interface{}, 4),
 	}
 	go func() {
-		for i := range w.Send {
+		for i := range w.sendChan {
 			w.Codec.Send(w.Conn, i)
 		}
 	} ()
+	go func() {
+		var err error
+		for {
+			var i map[string]interface{}
+			err = w.Codec.Recv(w.Conn, i)
+			if err != nil { break }
+			w.recvChan <- i
+		}
+		w.getError = err
+		w.recvChan <- nil
+		w.Conn.Close()
+	} ()
 	return w
+}
+
+func (w *WsChan) Send(i interface{}) {
+	w.sendChan <- i
+}
+
+func (w *WsChan) Recv(i interface{}) error {
+	if w.getError != nil {
+		return w.getError
+	}
+	n := <- w.recvChan
+	return mapstructure.Decode(n, i)
+}
+
+func (w *WsChan) TryRecv(i interface{}) error {
+	if w.getError != nil {
+		return w.getError
+	}
+	select {
+		case n := <- w.recvChan:
+			return mapstructure.Decode(n, i)
+		default:
+			return errors.New(WSCHAN_NOMSG)
+	}
+	panic("unreachable")
+	return nil
 }
