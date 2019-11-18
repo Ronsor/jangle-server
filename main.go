@@ -4,6 +4,8 @@ import (
 	"log"
 	"flag"
 
+	"server/util"
+
 	"github.com/vharitonsky/iniflags"
 	"github.com/bwmarrin/snowflake"
 	"github.com/fasthttp/router"
@@ -19,6 +21,7 @@ var (
 	flgAllowReg = flag.Bool("allowRegistration", false, "Allow registration of accounts on this server")
 	flgGatewayUrl = flag.String("apiGatewayUrl", "", "Specify round-robin URL for Gateway v6")
 	flgStaging = flag.Bool("staging", false, "Add dummy data for testing")
+	flgNoPanic = flag.Bool("nopanic", true, "Catch all panics in API handlers")
 
 	flgNode = flag.Int64("node", 1, "Node ID")
 )
@@ -28,6 +31,7 @@ var stopChan = make(chan error)
 
 func main() {
 	iniflags.Parse()
+	util.NoPanic = *flgNoPanic
 	log.Printf("info: jangle-server/%s loading...", VERSION)
 
 	flake, _ = snowflake.NewNode(*flgNode)
@@ -40,6 +44,7 @@ func main() {
 	r := router.New()
 
 	r.GET("/version.txt", func (c *fasthttp.RequestCtx) { c.WriteString(VERSION) })
+	InitRestUser(r)
 	log.Printf("info: initialized rest api routes")
 
 	InitGateway(r)

@@ -49,7 +49,7 @@ func MakeWsChan(ws *websocket.Conn, c Codec) *WsChan {
 		var err error
 		for {
 			var i map[string]interface{}
-			err = w.Codec.Recv(w.Conn, i)
+			err = w.Codec.Recv(w.Conn, &i)
 			if err != nil { break }
 			w.recvChan <- i
 		}

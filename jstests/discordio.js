@@ -1822,6 +1822,7 @@ function handleWSMessage(data, flags) {
 			if (!client.bot) client.getAccountSettings(function(err, res) {
 				if (err) return console.log(err);
 				client.internals.settings = res;
+				console.log(res);
 			});
 
 			return (function() {

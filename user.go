@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"time"
 
 	"server/util"
 
 	"github.com/bwmarrin/snowflake"
+	"github.com/valyala/fasthttp"
 	"github.com/globalsign/mgo/bson"
 )
 
@@ -29,7 +29,7 @@ const (
 // UserSettings is a Discord-compatible structure containing a user's settings
 type UserSettings struct {
 	Locale string `json:"locale"`
-	AfkTimeout time.Duration `json:"afk_timeout"`
+	AfkTimeout int `json:"afk_timeout"`
 	// TODO: the rest
 }
 
@@ -47,12 +47,12 @@ type User struct {
 
 	Flags int `json:"flags"`
 	PremiumType int `json:"premium_type"`
-	PremiumSince time.Time `json:"premium_since"`
+	PremiumSince int `json:"premium_since"`
 	Phone string `json:"-" bson:"phone"` // We use _phone instead, for reasons
 
 	// Gonna send this anyway
 
-	LastSession time.Time `json:"last_session"`
+	LastSession int `json:"last_session"`
 
 	// This is never sent in a user structure
 
@@ -68,21 +68,42 @@ type User struct {
 	_phone *string `json:"phone" bson:"-"` // ....
 }
 
+// GetUserByID returns a user by their unique ID
 func GetUserByID(ID snowflake.ID) (u *User, e error) {
+	var u2 User
 	c := DB.Core.C("users")
-	e = c.Find(bson.M{"_id": ID}).One(&u)
+	e = c.Find(bson.M{"_id": ID}).One(&u2)
+	u = &u2
 	return
 }
 
+// GetUserByToken returns a user using an authentication token
 func GetUserByToken(token string) (*User, error) {
 	if *flgStaging {
-		var i uint64
-		n, err := fmt.Sscanf(token, "%d", i)
+		var i snowflake.ID
+		n, err := fmt.Sscanf(token, "%d", &i)
 		if n != 1 { return nil, fmt.Errorf("Bad ID") }
 		if err != nil { return nil, err }
-		return GetUserByID(snowflake.ID(i))
+		return GetUserByID(i)
 	}
 	return nil, fmt.Errorf("Not implemented") // TODO: implement actual auth
+}
+
+// GetUserByHttpCtx returns a user using a fasthttp.RequestCtx
+func GetUserByHttpCtx(c *fasthttp.RequestCtx, ctxvar string) (*User, error) {
+	b := c.Request.Header.Peek("Authorization")
+	if b == nil { return nil, fmt.Errorf("No authorization token supplied") }
+	a := string(b)
+	user, err := GetUserByToken(a)
+	if err != nil { return nil, err }
+	if ctxvar != "" {
+		uid2 := c.UserValue(ctxvar)
+		if uid2 == "" || uid2 == "@me" {
+			return user, nil
+		}
+		// TODO
+	}
+	return user, nil
 }
 
 // MarshalAPI returns a version of the User struct that can be safely returned
@@ -99,7 +120,7 @@ func (u *User) MarshalAPI(includeEmail bool) *User {
 		u2.Email = ""
 	}
 	u2.locale = u2.Settings.Locale
-	return u
+	return &u2
 }
 
 /*

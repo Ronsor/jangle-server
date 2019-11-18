@@ -1,11 +1,13 @@
 /*Variable area*/
 var Discord = require('./discordio.js');
 var bot = new Discord.Client({
-	token: "null",
+	token: process.env.TOKEN,
 	autorun: true
 });
 
 /*Event area*/
+
+bot.on("debug", console.log)
 
 bot.on("ready", function(event) {
 	console.log("Connected!");

@@ -8,3 +8,9 @@ MONGO := mongod
 launch-mongo-test:
 	mkdir -p "$(MONGO_DBPATH)"
 	$(MONGO) --dbpath "$(MONGO_DBPATH)" --port $(MONGO_PORT)
+
+NODE := node
+BOT_TOKEN := 42
+
+launch-simple-bot:
+	env TOKEN=$(BOT_TOKEN) $(NODE) jstests/example.js
