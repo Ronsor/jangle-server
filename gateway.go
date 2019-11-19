@@ -8,7 +8,7 @@ import (
 	"github.com/fasthttp/router"
 	"github.com/fasthttp/websocket"
 
-	"server/util"
+	"jangled/util"
 )
 
 type gwSession struct {
@@ -68,14 +68,12 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 				return
 			}
 			sess.Identity = &d
-			guilds := make([]*UnavailableGuild, len(sess.User.GuildIDs))
-			for k, v := range sess.User.GuildIDs { guilds[k] = &UnavailableGuild{v, true} }
 			codec.Send(ws, &gwPacket{
 				GW_OP_DISPATCH,
 				&gwEvtDataReady{
 					Version: 6,
 					User: sess.User.MarshalAPI(true),
-					Guilds: guilds,
+					Guilds: []*UnavailableGuild{},
 					PrivateChannels: []interface{}{},
 				},
 				GW_EVT_READY,
@@ -90,6 +88,7 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 	log.Printf("Authenticated user: ID=%v", sess.User.ID)
 	wsc := util.MakeWsChan(ws, codec)
 	sess.Wsc = wsc
+	// TODO: channels
 	for {
 		pkt := new(gwPacket)
 		err := wsc.Recv(&pkt)

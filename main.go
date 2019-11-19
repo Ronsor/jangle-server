@@ -4,7 +4,7 @@ import (
 	"log"
 	"flag"
 
-	"server/util"
+	"jangled/util"
 
 	"github.com/vharitonsky/iniflags"
 	"github.com/bwmarrin/snowflake"
@@ -32,7 +32,7 @@ var stopChan = make(chan error)
 func main() {
 	iniflags.Parse()
 	util.NoPanic = *flgNoPanic
-	log.Printf("info: jangle-server/%s loading...", VERSION)
+	log.Printf("info: jangle-jangled/%s loading...", VERSION)
 
 	flake, _ = snowflake.NewNode(*flgNode)
 

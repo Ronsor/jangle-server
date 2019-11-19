@@ -1,4 +1,4 @@
-module server
+module jangled
 
 go 1.12
 

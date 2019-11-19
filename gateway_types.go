@@ -105,7 +105,7 @@ type gwPktDataUpdateStatus struct {
 // Ready event packet data
 type gwEvtDataReady struct {
 	Version int `json:"v"`
-	User *User `json:"user"`
+	User *APIUser `json:"user"`
 	// Discord docs say this is empty. Why is it even here?
 	PrivateChannels []interface{} `json:"private_channels"`
 	Guilds []*UnavailableGuild `json:"guilds"`

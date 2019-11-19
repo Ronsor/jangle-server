@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"server/util"
+	"jangled/util"
 
 	"github.com/bwmarrin/snowflake"
 	"github.com/valyala/fasthttp"
@@ -13,7 +13,7 @@ import (
 // User flags
 const (
 	USER_FLAG_NONE = 0
-	USER_FLAG_EMPLOYEE = 1 << 0
+	USER_FLAG_STAFF = 1 << 0
 	USER_FLAG_PARTNER = 1 << 1
 	USER_FLAG_EARLYADOPTER = 1 << 24
 	// The rest are unused
@@ -58,7 +58,6 @@ type User struct {
 
 	PasswordHash string `json:"-" bson:"password_hash"`
 	Settings *UserSettings `json:"-" bson:"user_settings"`
-	GuildIDs []snowflake.ID `json:"-" bson:"guildids"`
 
 	// Extra stuff for "compatibility" (ick!)
 
@@ -67,6 +66,12 @@ type User struct {
 	premium bool `json:"premium" bson:"-"` // Why?!? We already have PremiumType and PremiumSince
 	_phone *string `json:"phone" bson:"-"` // ....
 }
+
+
+// APIUser is here to ensure you know what you're doing before passing a User struct
+// into a response
+// ALWAYS CALL MARSHALAPI() FIRST!
+type APIUser User
 
 // GetUserByID returns a user by their unique ID
 func GetUserByID(ID snowflake.ID) (u *User, e error) {
@@ -89,15 +94,16 @@ func GetUserByToken(token string) (*User, error) {
 	return nil, fmt.Errorf("Not implemented") // TODO: implement actual auth
 }
 
-// GetUserByHttpCtx returns a user using a fasthttp.RequestCtx
-func GetUserByHttpCtx(c *fasthttp.RequestCtx, ctxvar string) (*User, error) {
+// GetUserByHttpRequest returns a user using a fasthttp.RequestCtx.
+// Specifically, it attempts to authorize the request using a token.
+func GetUserByHttpRequest(c *fasthttp.RequestCtx, ctxvar string) (*User, error) {
 	b := c.Request.Header.Peek("Authorization")
 	if b == nil { return nil, fmt.Errorf("No authorization token supplied") }
 	a := string(b)
 	user, err := GetUserByToken(a)
 	if err != nil { return nil, err }
 	if ctxvar != "" {
-		uid2 := c.UserValue(ctxvar)
+		uid2 := c.UserValue(ctxvar).(string) // You're going to pass a string, or I'll panic()
 		if uid2 == "" || uid2 == "@me" {
 			return user, nil
 		}
@@ -106,9 +112,9 @@ func GetUserByHttpCtx(c *fasthttp.RequestCtx, ctxvar string) (*User, error) {
 	return user, nil
 }
 
-// MarshalAPI returns a version of the User struct that can be safely returned
-func (u *User) MarshalAPI(includeEmail bool) *User {
-	u2 := *u
+// MarshalAPI returns a version of the User struct that can be safely returned.
+func (u *User) MarshalAPI(includeEmail bool) *APIUser {
+	u2 := APIUser(*u)
 	if u2.Phone != "" {
 		u2.mobile = true
 		u2._phone = &u2.Phone
@@ -121,6 +127,13 @@ func (u *User) MarshalAPI(includeEmail bool) *User {
 	}
 	u2.locale = u2.Settings.Locale
 	return &u2
+}
+
+func (u *User) UnmarshalAPI(a *APIUser) *User {
+	// TODO: stuff
+	panic("This isn't done")
+	_ = a
+	return u
 }
 
 /*
@@ -137,6 +150,18 @@ func InitUserStaging() {
 		Discriminator: "1234",
 		Email: "test@localhost",
 		PasswordHash: util.CryptPass("hello"),
+		Flags: USER_FLAG_STAFF | USER_FLAG_EARLYADOPTER,
+		Settings: &UserSettings{
+			Locale: "en-US",
+		},
+	})
+	c.Insert(&User{
+		ID: 43,
+		Username: "hello",
+		Discriminator: "4242",
+		Email: "test2@localhost",
+		PasswordHash: util.CryptPass("hello"),
+		Flags: USER_FLAG_EARLYADOPTER,
 		Settings: &UserSettings{
 			Locale: "en-US",
 		},

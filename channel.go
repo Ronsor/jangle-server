@@ -48,19 +48,31 @@ type Channel struct {
 	_nsfw *bool `json:"nsfw,omitempty" bson:"-"`
 }
 
-func GetChannelByID(i snowflake.ID) (*Channel, error) {
-	var x Channel
+type APIChannel Channel
+
+func GetChannelByID(ID snowflake.ID) (*Channel, error) {
+	var c2 Channel
 	c := DB.Core.C("channels")
-	err := c.Find(bson.M{"_id": i}).One(&x)
-	return &x, err
+	e := c.Find(bson.M{"_id": ID}).One(&c2)
+	if e != nil {
+		return nil, e
+	}
+	return &c2, nil
 }
 
-func (c *Channel) MarshalAPI() *Channel {
-	c2 := *c
-	if c.Type == CHTYPE_GUILD_TEXT {
-		c2._position = &c.Position
+// TODO: GetChannelByGuild, GetChannelByRecipients, etc.
+
+func (c *Channel) MarshalAPI() *APIChannel {
+	c2 := APIChannel(*c)
+	if c2.Type == CHTYPE_GUILD_TEXT {
 		c2._nsfw = &c.NSFW
+		c2._position = &c.Position
 	}
 	return &c2
 }
 
+func (c *Channel) UnmarshalAPI(a *APIChannel) *Channel {
+	panic("Unimplemented")
+	_ = a
+	return c
+}
