@@ -129,11 +129,20 @@ func (u *User) MarshalAPI(includeEmail bool) *APIUser {
 	return &u2
 }
 
+// UnmarshalAPI merges a safe APIUser struct's properties
 func (u *User) UnmarshalAPI(a *APIUser) *User {
 	// TODO: stuff
 	panic("This isn't done")
 	_ = a
 	return u
+}
+
+// DMChannels returns the DM channels a user is in
+func (u *User) Channels() []*Channel {
+	ch := []*Channel{}
+	err := DB.Core.C("channels").Find(bson.M{"recipients":u.ID}).All(&ch)
+	if err != nil { return []*Channel{} }
+	return ch
 }
 
 /*

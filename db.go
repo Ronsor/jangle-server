@@ -28,9 +28,9 @@ func InitDB() {
 
 	DB.Core.C("channels").EnsureIndex(mgo.Index{Name:"idx_recipients", Key: []string{"recipients"}})
 
-
 	if *flgStaging {
 		InitUserStaging()
+		InitChannelStaging()
 		log.Printf("staging: added dummy users")
 	}
 }

@@ -25,6 +25,7 @@ const (
 // Gateway events
 const (
 	GW_EVT_READY = "READY"
+	GW_EVT_CHANNEL_CREATE = "CHANNEL_CREATE"
 )
 
 // OP_UPDATE_STATUS types
@@ -55,7 +56,7 @@ func mkGwPkt(op int, data interface{}, therest ...interface{}) *gwPacket {
 		p.Seq = therest[0].(int)
 	}
 	if len(therest) > 1 {
-		p.Type = therest[0].(string)
+		p.Type = therest[1].(string)
 	}
 	return p
 }

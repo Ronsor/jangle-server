@@ -55,6 +55,7 @@ func MakeWsChan(ws *websocket.Conn, c Codec) *WsChan {
 		}
 		w.getError = err
 		w.recvChan <- nil
+		w.Closed = true
 		w.Conn.Close()
 	} ()
 	return w

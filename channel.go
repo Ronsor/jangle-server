@@ -76,3 +76,12 @@ func (c *Channel) UnmarshalAPI(a *APIChannel) *Channel {
 	_ = a
 	return c
 }
+
+func InitChannelStaging() {
+	c := DB.Core.C("channels")
+	c.Insert(&Channel{
+		ID: 1,
+		Type: CHTYPE_DM,
+		Recipients: []snowflake.ID{42,43},
+	})
+}

@@ -47,6 +47,7 @@ func main() {
 	InitRestUser(r)
 	log.Printf("info: initialized rest api routes")
 
+	go sessMgr.Main()
 	InitGateway(r)
 	log.Printf("info: initialized gateway routes")
 

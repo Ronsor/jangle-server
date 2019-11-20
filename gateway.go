@@ -1,10 +1,10 @@
 package main
 
 import (
-	//"net/http"
 	"log"
 
 	"github.com/valyala/fasthttp"
+	//"github.com/bwmarrin/snowflake"
 	"github.com/fasthttp/router"
 	"github.com/fasthttp/websocket"
 
@@ -16,6 +16,9 @@ type gwSession struct {
 	Identity *gwPktDataIdentify
 	Wsc *util.WsChan
 	Seq int
+
+	EvtChan chan *gwPacket
+	LastEvt *gwPacket
 }
 
 func InitGateway(r *router.Router) {
@@ -45,7 +48,7 @@ func InitGateway(r *router.Router) {
 func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 	defer util.TryRecover()
 	defer ws.Close()
-	var sess = new(gwSession)
+	var sess = &gwSession{}
 	var codec util.Codec
 	switch string(ctx.FormValue("encoding")) {
 		default:
@@ -80,6 +83,11 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 				sess.Seq,
 			})
 			sess.Seq++
+			for _, ch := range sess.User.Channels() {
+				codec.Send(ws, mkGwPkt(GW_OP_DISPATCH, ch, sess.Seq, GW_EVT_CHANNEL_CREATE))
+				sess.Seq++
+			}
+			sess.EvtChan = make(chan *gwPacket, 256)
 			break
 		// TODO: resuming sessions
 		default:
@@ -88,7 +96,17 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 	log.Printf("Authenticated user: ID=%v", sess.User.ID)
 	wsc := util.MakeWsChan(ws, codec)
 	sess.Wsc = wsc
-	// TODO: channels
+	go func() {
+		for r := range sess.EvtChan {
+			if sess.Wsc.Closed {
+				sess.LastEvt = r
+				break
+			}
+			r.Seq = sess.Seq
+			sess.Seq++
+			wsc.Send(r)
+		}
+	} ()
 	for {
 		pkt := new(gwPacket)
 		err := wsc.Recv(&pkt)
@@ -104,3 +122,4 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 	}
 	ws.Close()
 }
+
