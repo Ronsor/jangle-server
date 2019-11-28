@@ -10,18 +10,22 @@ import (
 	"github.com/bwmarrin/snowflake"
 )
 
-type APIReqPostUsersUidChannels struct {
-	RecipientID snowflake.ID `json:"recipient_id"`
-}
-
 func InitRestUser(r *router.Router) {
 	log.Println("Init /users Endpoints")
+
+	type APIRespGetUsersUidSettings *UserSettings
+
 	r.GET("/api/v6/users/:uid/settings", MiddleTokenAuth(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
-		util.WriteJSON(c, me.Settings)
+		util.WriteJSON(c, APIRespGetUsersUidSettings(me.Settings))
 	}, "uid"))
 
-	r.POST("/api/v6/users/:uid/channels", MiddleTokenAuth(func(c *fasthttp.RequestCtx) {
+	type APIReqPostUsersUidChannels struct {
+		RecipientID snowflake.ID `json:"recipient_id"`
+	}
+
+
+	/*r.POST("/api/v6/users/:uid/channels", MiddleTokenAuth(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		var req APIReqPostUsersUidChannels
 		if util.PostJSON(c, &req) != nil {
@@ -34,7 +38,26 @@ func InitRestUser(r *router.Router) {
 			return
 		}
 		// Something *should* be done here
-		_,_=rcp,me
-		panic("we did it guys! now we can rest")
+		chs := rcp.Channels()
+		out := make([]*APITypeDMChannel, 0, len(chs))
+		for k, v := range chs {
+			if v.Type == CHTYPE_DM {
+				out = append(out, v.ToAPI().(*APITypeDMChannel))
+			}
+		}
+		util.WriteJSON(c, out)
+	}, "uid"))*/
+
+	r.GET("/api/v6/users/:uid/channels", MiddleTokenAuth(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		// Something *should* be done here
+		chs := me.Channels()
+		out := make([]*APITypeDMChannel, 0, len(chs))
+		for _, v := range chs {
+			if v.Type == CHTYPE_DM {
+				out = append(out, v.ToAPI().(*APITypeDMChannel))
+			}
+		}
+		util.WriteJSON(c, out)
 	}, "uid"))
 }

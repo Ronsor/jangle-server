@@ -6,7 +6,7 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-func PostJSON(c *fasthttp.RequestCtx, i interface{}) error {
+func ReadPostJSON(c *fasthttp.RequestCtx, i interface{}) error {
 	return json.Unmarshal(c.PostBody(), i)
 }
 

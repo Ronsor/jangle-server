@@ -14,41 +14,36 @@ const (
 
 // Channel is a Discord-compatible structure representing any type of channel
 type Channel struct {
-	ID snowflake.ID `json:"id" bson:"_id"`
-	Type int `json:"type"`
+	ID snowflake.ID `bson:"_id"`
+	Type int `bson:"type"`
 
 	// Text Channel only
-	LastMessageID snowflake.ID `json:"last_message_id"`
+	LastMessageID snowflake.ID `bson:"last_message_id"`
 
 	// DM/Group DM only
-	Recipients []snowflake.ID `json:"recipients,omitempty"`
+	Recipients []snowflake.ID `bson:"recipients"`
 
 	// Group DM only
-	OwnerID snowflake.ID `json:"owner_id,omitempty"`
-	Icon string `json:"icon,omitempty"`
+	OwnerID snowflake.ID `bson:"owner_id"`
+	Icon string `bson:"icon"`
 
 	// Guild only
-	GuildID snowflake.ID `json:"guild_id,omitempty"`
-	Position int `json:"-" bson:"position"`
-	Name string `json:"name,omitempty"`
-	ParentID snowflake.ID `json:"parent_id,omitempty"`
-	PermissionOverwrites []interface{} `json:"permission_overwrites,omitempty"`
+	GuildID snowflake.ID `bson:"guild_id"`
+	Position int `bson:"position"`
+	Name string `bson:"name"`
+	ParentID snowflake.ID `bson:"parent_id"`
+	PermissionOverwrites []interface{} `bson:"permission_overwrites"`
 
 	// Guild Text Channel only
-	Topic string `json:"topic,omitempty"`
-	NSFW bool `json:"-" bson:"nsfw"`
-	RateLimitPerUser int `json:"rate_limit_per_user,omitempty"`
+	Topic string `bson:"topic"`
+	NSFW bool `bson:"nsfw"`
+	RateLimitPerUser int `bson:"rate_limit_per_user"`
 
 	// Guild Voice Channel only
-	Bitrate int `json:"bitrate,omitempty"`
-	UserLimit int `json:"user_limit,omitempty"`
-
-	// """COMPATIBILITY"""
-	_position *int `json:"position,omitempty" bson:"-"`
-	_nsfw *bool `json:"nsfw,omitempty" bson:"-"`
+	Bitrate int `bson:"bitrate"`
+	UserLimit int `bson:"user_limit"`
 }
 
-type APIChannel Channel
 
 func GetChannelByID(ID snowflake.ID) (*Channel, error) {
 	var c2 Channel
@@ -62,19 +57,23 @@ func GetChannelByID(ID snowflake.ID) (*Channel, error) {
 
 // TODO: GetChannelByGuild, GetChannelByRecipients, etc.
 
-func (c *Channel) MarshalAPI() *APIChannel {
-	c2 := APIChannel(*c)
-	if c2.Type == CHTYPE_GUILD_TEXT {
-		c2._nsfw = &c.NSFW
-		c2._position = &c.Position
+func (c *Channel) ToAPI() APITypeAnyChannel {
+	if c.Type == CHTYPE_DM {
+		return &APITypeDMChannel{
+			ID: c.ID,
+			Type: c.Type,
+			Recipients: c.Recipients,
+			LastMessageID: c.LastMessageID,
+		}
 	}
-	return &c2
+	return nil
 }
 
-func (c *Channel) UnmarshalAPI(a *APIChannel) *Channel {
-	panic("Unimplemented")
-	_ = a
-	return c
+func (c *Channel) CreateMessage(m *Message) {
+	d := DB.Msg.C("msgs")
+	m.ID = flake.Generate()
+	m.ChannelID = c.ID
+	d.Insert(&m)
 }
 
 func InitChannelStaging() {

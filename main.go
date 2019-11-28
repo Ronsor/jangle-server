@@ -45,9 +45,10 @@ func main() {
 
 	r.GET("/version.txt", func (c *fasthttp.RequestCtx) { c.WriteString(VERSION) })
 	InitRestUser(r)
+	InitRestChannel(r)
 	log.Printf("info: initialized rest api routes")
 
-	go sessMgr.Main()
+	InitSessionManager()
 	InitGateway(r)
 	log.Printf("info: initialized gateway routes")
 

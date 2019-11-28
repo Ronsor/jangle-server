@@ -27,57 +27,43 @@ const (
 )
 
 // UserSettings is a Discord-compatible structure containing a user's settings
+// This struct is safe to be returned by an API call
 type UserSettings struct {
-	Locale string `json:"locale"`
-	AfkTimeout int `json:"afk_timeout"`
+	Locale string `bson:"locale"`
+	AfkTimeout int `bson:"afk_timeout"`
 	// TODO: the rest
 }
 
 // User is a Discord-compatible structure containing information on a user
+// This struct is not safe to be returned by an API call
 type User struct {
-	ID snowflake.ID `json:"id,string" bson:"_id"`
-	Username string `json:"username"`
-	Discriminator string `json:"discriminator"`
-	Email string `json:"email,omitempty"`
+	ID snowflake.ID `bson:"_id"`
+	Username string `bson:"username"`
+	Discriminator int `bson:"discriminator"`
+	Email string `bson:"email,omitempty"`
 
-	Bot bool `json:"bot"`
-	Avatar string `json:"avatar"`
-	MfaEnabled bool `json:"mfa_enabled"`
-	Verified bool `json:"verified"`
+	Bot bool `bson:"bot"`
+	Avatar string `bson:"avatar"`
+	MfaEnabled bool `bson:"mfa_enabled"`
+	Verified bool `bson:"verified"`
 
-	Flags int `json:"flags"`
-	PremiumType int `json:"premium_type"`
-	PremiumSince int `json:"premium_since"`
-	Phone string `json:"-" bson:"phone"` // We use _phone instead, for reasons
+	Flags int `bson:"flags"`
+	PremiumType int `bson:"premium_type"`
+	PremiumSince int `bson:"premium_since"`
+	Phone string `bson:"phone"`
 
-	// Gonna send this anyway
+	LastSession int `bson:"last_session"`
 
-	LastSession int `json:"last_session"`
-
-	// This is never sent in a user structure
-
-	PasswordHash string `json:"-" bson:"password_hash"`
-	Settings *UserSettings `json:"-" bson:"user_settings"`
-
-	// Extra stuff for "compatibility" (ick!)
-
-	mobile bool `json:"mobile" bson:"-"`   // Why not just check if `phone` is null?
-	locale string `json:"locale" bson:"-"` // Technically in UserSettings
-	premium bool `json:"premium" bson:"-"` // Why?!? We already have PremiumType and PremiumSince
-	_phone *string `json:"phone" bson:"-"` // ....
+	PasswordHash string `bson:"password_hash"`
+	Settings *UserSettings `bson:"user_settings"`
 }
-
-
-// APIUser is here to ensure you know what you're doing before passing a User struct
-// into a response
-// ALWAYS CALL MARSHALAPI() FIRST!
-type APIUser User
 
 // GetUserByID returns a user by their unique ID
 func GetUserByID(ID snowflake.ID) (u *User, e error) {
 	var u2 User
 	c := DB.Core.C("users")
 	e = c.Find(bson.M{"_id": ID}).One(&u2)
+	u2.ID = ID
 	u = &u2
 	return
 }
@@ -112,28 +98,39 @@ func GetUserByHttpRequest(c *fasthttp.RequestCtx, ctxvar string) (*User, error) 
 	return user, nil
 }
 
-// MarshalAPI returns a version of the User struct that can be safely returned.
-func (u *User) MarshalAPI(includeEmail bool) *APIUser {
-	u2 := APIUser(*u)
-	if u2.Phone != "" {
-		u2.mobile = true
-		u2._phone = &u2.Phone
+// ToAPI returns a version of the User struct that can be returned by API calls
+func (u *User) ToAPI(safe bool) *APITypeUser {
+	u2 := &APITypeUser{
+		ID: u.ID,
+		Username: u.Username,
+		Discriminator: u.Discriminator,
+		AvatarHash: u.Avatar,
+		Bot: u.Bot,
+		MfaEnabled: true,
+		Flags: u.Flags,
+		PremiumType: u.PremiumType,
 	}
-	if u2.PremiumType != 0 {
-		u2.premium = true
+	if u.Settings != nil {
+		u2.Locale = u.Settings.Locale
 	}
-	if !includeEmail {
-		u2.Email = ""
+	if u.PremiumType != USER_PREMIUM_NONE {
+		u2.Premium = true
 	}
-	u2.locale = u2.Settings.Locale
-	return &u2
+	if !safe {
+		if u.Phone != "" {
+			u2.Phone = &u.Phone
+			u2.Mobile = true
+		}
+		u2.Email = u.Email
+		u2.Verified = &u.Verified
+	}
+	return u2
 }
 
-// UnmarshalAPI merges a safe APIUser struct's properties
-func (u *User) UnmarshalAPI(a *APIUser) *User {
-	// TODO: stuff
-	panic("This isn't done")
-	_ = a
+// FromAPI merges a safe APITypeUser struct's properties
+func (u *User) FromAPI(in *APITypeUser) *User {
+	// TODO: something
+	_ = in
 	return u
 }
 
@@ -156,7 +153,7 @@ func InitUserStaging() {
 	c.Insert(&User{
 		ID: 42,
 		Username: "test1",
-		Discriminator: "1234",
+		Discriminator: 1234,
 		Email: "test@localhost",
 		PasswordHash: util.CryptPass("hello"),
 		Flags: USER_FLAG_STAFF | USER_FLAG_EARLYADOPTER,
@@ -167,7 +164,7 @@ func InitUserStaging() {
 	c.Insert(&User{
 		ID: 43,
 		Username: "hello",
-		Discriminator: "4242",
+		Discriminator: 4242,
 		Email: "test2@localhost",
 		PasswordHash: util.CryptPass("hello"),
 		Flags: USER_FLAG_EARLYADOPTER,

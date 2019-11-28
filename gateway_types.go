@@ -26,6 +26,7 @@ const (
 const (
 	GW_EVT_READY = "READY"
 	GW_EVT_CHANNEL_CREATE = "CHANNEL_CREATE"
+	GW_EVT_MESSAGE_CREATE = "MESSAGE_CREATE"
 )
 
 // OP_UPDATE_STATUS types
@@ -44,6 +45,8 @@ type gwPacket struct {
 	Data interface{} `json:"d"`
 	Type string `json:"t"`
 	Seq int `json:"s"`
+
+	PvtData interface{} `json:"-"`
 }
 
 // D decodes the data into the specified packet
@@ -106,7 +109,7 @@ type gwPktDataUpdateStatus struct {
 // Ready event packet data
 type gwEvtDataReady struct {
 	Version int `json:"v"`
-	User *APIUser `json:"user"`
+	User *APITypeUser `json:"user"`
 	// Discord docs say this is empty. Why is it even here?
 	PrivateChannels []interface{} `json:"private_channels"`
 	Guilds []*UnavailableGuild `json:"guilds"`

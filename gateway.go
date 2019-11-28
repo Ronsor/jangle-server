@@ -17,8 +17,7 @@ type gwSession struct {
 	Wsc *util.WsChan
 	Seq int
 
-	EvtChan chan *gwPacket
-	LastEvt *gwPacket
+	EvtChan chan interface{}
 }
 
 func InitGateway(r *router.Router) {
@@ -54,7 +53,7 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 		default:
 			codec = &util.JsonCodec{}
 	}
-	codec.Send(ws, mkGwPkt(GW_OP_HELLO, &gwPktDataHello{1000}))
+	codec.Send(ws, mkGwPkt(GW_OP_HELLO, &gwPktDataHello{60000}))
 	var pkt *gwPacket
 	err := codec.Recv(ws, &pkt)
 	if err != nil {
@@ -71,23 +70,25 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 				return
 			}
 			sess.Identity = &d
+			sess.EvtChan = SessSub.Sub()
 			codec.Send(ws, &gwPacket{
 				GW_OP_DISPATCH,
 				&gwEvtDataReady{
 					Version: 6,
-					User: sess.User.MarshalAPI(true),
+					User: sess.User.ToAPI(false),
 					Guilds: []*UnavailableGuild{},
 					PrivateChannels: []interface{}{},
 				},
 				GW_EVT_READY,
 				sess.Seq,
+				nil,
 			})
 			sess.Seq++
 			for _, ch := range sess.User.Channels() {
-				codec.Send(ws, mkGwPkt(GW_OP_DISPATCH, ch, sess.Seq, GW_EVT_CHANNEL_CREATE))
+				codec.Send(ws, mkGwPkt(GW_OP_DISPATCH, ch.ToAPI(), sess.Seq, GW_EVT_CHANNEL_CREATE))
+				SessSub.AddSub(sess.EvtChan, ch.ID.String())
 				sess.Seq++
 			}
-			sess.EvtChan = make(chan *gwPacket, 256)
 			break
 		// TODO: resuming sessions
 		default:
@@ -99,12 +100,13 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 	go func() {
 		for r := range sess.EvtChan {
 			if sess.Wsc.Closed {
-				sess.LastEvt = r
 				break
 			}
-			r.Seq = sess.Seq
+			pkt := r.(gwPacket)
+			pkt.Seq = sess.Seq
+			log.Println(pkt.Data)
+			wsc.Send(&pkt)
 			sess.Seq++
-			wsc.Send(r)
 		}
 	} ()
 	for {

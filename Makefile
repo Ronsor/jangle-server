@@ -10,7 +10,7 @@ MONGO := mongod
 
 launch-mongo-test:
 	mkdir -p "$(MONGO_DBPATH)"
-	$(MONGO) --dbpath "$(MONGO_DBPATH)" --port $(MONGO_PORT)
+	$(MONGO) --dbpath "$(MONGO_DBPATH)" --port $(MONGO_PORT) --replSet jangle-mongodb
 
 NODE := node
 BOT_TOKEN := 42

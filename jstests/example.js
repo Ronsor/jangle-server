@@ -22,6 +22,7 @@ bot.on("message", function(user, userID, channelID, message, event) {
 	console.log("----------");
 
 	if (message === "ping") {
+		console.log("Got ping")
 		sendMessages(channelID, ["Pong"]); //Sending a message with our helper function
 	} else if (message === "picture") {
 		sendFiles(channelID, ["fillsquare.png"]); //Sending a file with our helper function

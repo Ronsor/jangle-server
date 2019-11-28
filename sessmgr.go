@@ -1,44 +1,66 @@
 package main
 
 import (
-	"sync"
-	"github.com/bwmarrin/snowflake"
+	"log"
+	"fmt"
+	"time"
+
+	"github.com/mitchellh/mapstructure"
+	"github.com/cskr/pubsub"
+	"github.com/globalsign/mgo"
+	"github.com/globalsign/mgo/bson"
+	_ "github.com/bwmarrin/snowflake"
 )
 
-var gwSessMgr = CreateSessionManager()
+var SessSub = pubsub.New(16)
 
-type SessionManager struct {
-	sess_mtx sync.RWMutex
-
-	chansubs map[snowflake.ID]map[*gwSession]struct{}
+func msDecodeBSON(in, out interface{}) error {
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{TagName:"bson", Result: out})
+	if err != nil { return err }
+	return decoder.Decode(in)
 }
 
-func CreateSessionManager() *SessionManager {
-	r := &SessionManager{}
-	r.chansubs = new(map[snowflake.ID]map[*gwSession]struct{})
-	return r
+func InitSessionManager() {
+	go RunSessionManager("msgs", func (dm bson.M) error {
+		id := fmt.Sprintf("%v", dm["channel_id"])
+		var m Message
+		err := msDecodeBSON(dm, &m)
+		if err != nil { return err }
+		log.Println("SessionManager: Msg:", id, m)
+		if m.WebhookID == 0 {
+			m.Author, err = GetUserByID(m.Author.ID)
+			if err != nil {
+				return fmt.Errorf("WARNING: Failed to send MESSAGE_CREATE event: no such Author:", m.Author.ID)
+			}
+		}
+		SessSub.TryPub(gwPacket{
+			Op: GW_OP_DISPATCH,
+			Type: GW_EVT_MESSAGE_CREATE,
+			Data: m.ToAPI(),
+		}, id)
+		return nil
+	})
+	// That's all folks!
 }
 
-func (sm *SessionManager) ChanSub(s *gwSession, c snowflake.ID) {
-	sm.sess_mtx.Lock()
-	defer sm.sess_mtx.Unlock()
-	n := chansubs[c]
-	if n == nil { n = new(map[snowflake.ID]struct{}) }
-	n[s] = struct{}{}
-	chansubs[c] = n
-}
-
-func (sm *SessionManager) ChanUnsub(s *gwSession, c snowflake.ID) {
-	sm.sess_mtx.Lock()
-	defer sm.sess_mtx.Unlock()
-	n := chansubs[c]
-	if n == nil { n = new(map[snowflake.ID]struct{}) }
-	delete(n, s)
-	chansubs[c] = n
-}
-
-func (sm *SessionManager) Main() {
-	db2 := DB.Msg.Session.New()
-	
-	_ = db2
+func RunSessionManager(col string, fn func (doc bson.M) error) {
+	for {
+		s2 := DB.Msg.Session.New().DB("")
+		pipeline := []bson.M{}
+		cstream, err := s2.C(col).Watch(pipeline, mgo.ChangeStreamOptions{MaxAwaitTimeMS:time.Second*5})
+		if err != nil { log.Println("SessionManager:", err); continue }
+		var doc bson.M
+		for cstream.Next(&doc) {
+			dm, ok := doc["fullDocument"].(bson.M)
+			if !ok { continue }
+			err := fn(dm)
+			if err != nil {
+				log.Println("SessionManager: " + col + ": error:", err)
+			}
+		}
+		if err := cstream.Close(); err != nil {
+			log.Println("SessionManager:", err)
+		}
+	}
+	panic("Unreachable")
 }
