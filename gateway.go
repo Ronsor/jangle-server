@@ -86,6 +86,7 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 			sess.Seq++
 			for _, ch := range sess.User.Channels() {
 				codec.Send(ws, mkGwPkt(GW_OP_DISPATCH, ch.ToAPI(), sess.Seq, GW_EVT_CHANNEL_CREATE))
+				log.Println(ch.ID.String())
 				SessSub.AddSub(sess.EvtChan, ch.ID.String())
 				sess.Seq++
 			}
@@ -100,6 +101,7 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 	go func() {
 		for r := range sess.EvtChan {
 			if sess.Wsc.Closed {
+				log.Println("E")
 				break
 			}
 			pkt := r.(gwPacket)

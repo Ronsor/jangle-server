@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/snowflake"
+	"github.com/globalsign/mgo/bson"
 )
 
 const (
@@ -54,6 +55,14 @@ type Message struct {
 	Flags int `bson:"flags"`
 
 	MiscData interface{} `bson:"misc_data"`
+}
+
+func GetMessageByID(i snowflake.ID) (*Message, error) {
+	var m Message
+	c := DB.Msg.C("msgs")
+	err := c.Find(bson.M{"_id":i}).One(&m)
+	if err != nil { return nil, err }
+	return &m, nil
 }
 
 func (m *Message) ToAPI() (ret *APITypeMessage) {

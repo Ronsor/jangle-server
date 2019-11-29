@@ -9,7 +9,7 @@ import (
 	"github.com/cskr/pubsub"
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
-	_ "github.com/bwmarrin/snowflake"
+	"github.com/bwmarrin/snowflake"
 )
 
 var SessSub = pubsub.New(16)
@@ -23,13 +23,14 @@ func msDecodeBSON(in, out interface{}) error {
 func InitSessionManager() {
 	go RunSessionManager("msgs", func (dm bson.M, evt bson.M) error {
 		log.Println("Yo: ", evt)
-		id := fmt.Sprintf("%v", dm["channel_id"])
-		switch evt.operationType.(string) {
+		id := fmt.Sprintf("%v", evt["documentKey"].(bson.M)["_id"])
+		snow, err := snowflake.ParseString(id)
+		if err != nil { return err }
+		switch evt["operationType"].(string) {
 			case "insert":
 				var m Message
 				err := msDecodeBSON(dm, &m)
 				if err != nil { return err }
-				log.Println("SessionManager: Msg:", id, m)
 				if m.WebhookID == 0 {
 					m.Author, err = GetUserByID(m.Author.ID)
 					if err != nil {
@@ -40,10 +41,26 @@ func InitSessionManager() {
 					Op: GW_OP_DISPATCH,
 					Type: GW_EVT_MESSAGE_CREATE,
 					Data: m.ToAPI(),
-				}, id)
+				}, m.ChannelID.String())
 			break
 			case "update":
-				// TODO
+				uf := evt["updateDescription"].(bson.M)["updatedFields"].(bson.M)
+				m, err := GetMessageByID(snow) // TODO: don't do this!
+				if err != nil {
+					return err
+				}
+				if content, ok := uf["content"].(string); ok {
+					log.Println("Sending content update")
+					SessSub.TryPub(gwPacket{
+						Op: GW_OP_DISPATCH,
+						Type: GW_EVT_MESSAGE_UPDATE,
+						Data: bson.M{
+							"id": m.ID,
+							"channel_id": m.ChannelID,
+							"content": content,
+						},
+					}, m.ChannelID.String())
+				}
 			break
 		}
 		return nil
