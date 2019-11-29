@@ -10,7 +10,9 @@ import (
 
 const (
 	APIERR_UNKNOWN_USER = 10013
+	APIERR_UNKNOWN_CHANNEL = 10003
 	APIERR_UNAUTHORIZED = 40001
+	// TODO fill in the rest of the magic numbers
 )
 
 // API call error
@@ -56,6 +58,13 @@ type APITypeDMChannel struct {
 	Recipients []snowflake.ID `json:"recipients"`
 }
 
+// "Safe" MessageReaction type
+type APITypeMessageReaction struct {
+	Emoji *APITypeEmoji `json:"emoji"`
+	Count int `json:"count"`
+	Me bool `json:"me"`
+}
+
 // "Safe" Message type
 // Good grief Discord that's a lot of fields
 type APITypeMessage struct {
@@ -78,8 +87,8 @@ type APITypeMessage struct {
 	MentionChannels []interface{} `json:"mention_channels"`
 
 	Attachments []interface{} `json:"attachments"`
-	Embeds []interface{} `json:"embeds"`
-	Reactions []interface{} `json:"reactions,omitempty"`
+	Embeds []*MessageEmbed `json:"embeds"`
+	Reactions []*APITypeMessageReaction `json:"reactions,omitempty"`
 
 	Nonce string `json:"nonce,omitempty"`
 	Pinned bool `json:"pinned"`
@@ -87,4 +96,16 @@ type APITypeMessage struct {
 
 	Type int `json:"type"`
 	Flags int `json:"flags,omitempty"`
+}
+
+// "Safe" Emoji type
+// The amount of pointer types in this struct is awful
+type APITypeEmoji struct {
+	ID *snowflake.ID `json:"id,string"` // Can be null
+	Name *string `json:"name,omitempty"` // Can be null
+	Roles []snowflake.ID `json:"roles,omitempty"`
+	User *APITypeUser `json:"user,omitempty"`
+	RequireColons *bool `json:"require_colons,omitempty"`
+	Managed *bool `json:"managed,omitempty"`
+	Animated *bool `json:"animated,omitempty"`
 }

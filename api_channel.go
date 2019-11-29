@@ -19,12 +19,12 @@ func InitRestChannel(r *router.Router) {
 		Content string `json:"content"`
 		Nonce interface{} `json:"nonce"`
 		TTS bool `json:"tts"`
-		Embed interface{} `json:"embed"`
+		Embed *MessageEmbed `json:"embed"`
 		PayloadJson string `json:"payload_json"`
 	}
 
 	// Why is this so convoluted Discord? multipart/form-data, application/json, "payload_json"????
-	r.POST("/api/v6/channels/:cid/messages", MiddleTokenAuth(func(c *fasthttp.RequestCtx) {
+	r.POST("/api/v6/channels/:cid/messages", MwTokenAuth(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		var req APIReqPostChannelsCidMessages
 		cid := c.UserValue("cid").(string)
@@ -43,12 +43,12 @@ func InitRestChannel(r *router.Router) {
 
 		snow, err := snowflake.ParseString(cid)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{10003, "Channel does not exist"})
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
 			return
 		}
 		ch, err := GetChannelByID(snow)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{10003, "Channel does not exist"})
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
 			return
 		}
 
@@ -60,6 +60,7 @@ func InitRestChannel(r *router.Router) {
 			Nonce: fmt.Sprintf("%v", req.TTS),
 			Author: &User{ID: me.ID},
 			Timestamp: time.Now().Unix(),
+			Embeds: []*MessageEmbed{req.Embed}
 		}
 
 		ch.CreateMessage(m)
@@ -67,3 +68,4 @@ func InitRestChannel(r *router.Router) {
 		return
 	}))
 }
+

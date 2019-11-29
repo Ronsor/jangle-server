@@ -44,6 +44,19 @@ type Channel struct {
 	UserLimit int `bson:"user_limit"`
 }
 
+func CreateDMChannel(party1, party2 snowflake.ID) (*Channel, error) {
+	var c2 Channel
+	c := DB.Core.C("channels")
+	e := c.Find(bson.M{"recipients": bson.M{"$all": []snowflake.ID{party1,party2}}, "type": CHTYPE_DM}).One(&c2)
+	if e != nil {
+		c2.ID = flake.Generate()
+		c2.Recipients = []snowflake.ID{party1,party2}
+		c2.Type = CHTYPE_DM
+		err := c.Insert(&c2)
+		if err != nil { return nil, err }
+	}
+	return &c2, nil
+}
 
 func GetChannelByID(ID snowflake.ID) (*Channel, error) {
 	var c2 Channel
@@ -69,11 +82,11 @@ func (c *Channel) ToAPI() APITypeAnyChannel {
 	return nil
 }
 
-func (c *Channel) CreateMessage(m *Message) {
+func (c *Channel) CreateMessage(m *Message) error {
 	d := DB.Msg.C("msgs")
 	m.ID = flake.Generate()
 	m.ChannelID = c.ID
-	d.Insert(&m)
+	return d.Insert(&m)
 }
 
 func InitChannelStaging() {

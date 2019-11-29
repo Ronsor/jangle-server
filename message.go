@@ -8,8 +8,18 @@ import (
 
 const (
 	MSGTYPE_DEFAULT = 0
+	MSGTYPE_DUMMY = 0x42424242
 	// TODO: the rest
 )
+
+type MessageEmbed struct {
+
+}
+
+type MessageReaction struct {
+	Count int `bson:"count"`
+	Emoji Emoji `bson:"emoji"`
+}
 
 type Message struct {
 	ID snowflake.ID `bson:"_id"`
@@ -31,8 +41,8 @@ type Message struct {
 	MentionChannels []interface{} `bson:"mention_channels"`
 
 	Attachments []interface{} `bson:"attachments"`
-	Embeds []interface{} `bson:"embeds"`
-	Reactions []interface{} `bson:"reactions"`
+	Embeds []*MessageEmbed `bson:"embeds"`
+	Reactions []*MessageReaction `bson:"reactions"`
 
 	Nonce string `bson:"nonce"`
 	Pinned bool `bson:"pinned"`
@@ -40,6 +50,8 @@ type Message struct {
 
 	Type int `bson:"type"`
 	Flags int `bson:"flags"`
+
+	MiscData interface{} `bson:"misc_data"`
 }
 
 func (m *Message) ToAPI() (ret *APITypeMessage) {
@@ -57,14 +69,17 @@ func (m *Message) ToAPI() (ret *APITypeMessage) {
 		MentionChannels: m.MentionChannels,
 		Attachments: m.Attachments,
 		Embeds: m.Embeds,
-		Reactions: m.Reactions,
 		Nonce: m.Nonce,
 		Pinned: m.Pinned,
 		Type: m.Type,
 		Flags: m.Flags,
 	}
 
-	ret.Author = m.Author.ToAPI(false)
+	ret.Author = m.Author.ToAPI(true)
+	ret.Mentions = []*APITypeUser{}
+	for _, v := range m.Mentions {
+		ret.Mentions = append(ret.Mentions, v.ToAPI(true))
+	}
 
 	return
 }

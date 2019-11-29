@@ -15,7 +15,7 @@ func InitRestUser(r *router.Router) {
 
 	type APIRespGetUsersUidSettings *UserSettings
 
-	r.GET("/api/v6/users/:uid/settings", MiddleTokenAuth(func(c *fasthttp.RequestCtx) {
+	r.GET("/api/v6/users/:uid/settings", MwTokenAuth(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		util.WriteJSON(c, APIRespGetUsersUidSettings(me.Settings))
 	}, "uid"))
@@ -25,10 +25,10 @@ func InitRestUser(r *router.Router) {
 	}
 
 
-	/*r.POST("/api/v6/users/:uid/channels", MiddleTokenAuth(func(c *fasthttp.RequestCtx) {
+	r.POST("/api/v6/users/:uid/channels", MwTokenAuth(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		var req APIReqPostUsersUidChannels
-		if util.PostJSON(c, &req) != nil {
+		if util.ReadPostJSON(c, &req) != nil {
 			util.WriteJSONStatus(c, 400, &APIResponseError{0, "Malformed request body"})
 			return
 		}
@@ -37,18 +37,16 @@ func InitRestUser(r *router.Router) {
 			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_USER, "User does not exist"})
 			return
 		}
-		// Something *should* be done here
-		chs := rcp.Channels()
-		out := make([]*APITypeDMChannel, 0, len(chs))
-		for k, v := range chs {
-			if v.Type == CHTYPE_DM {
-				out = append(out, v.ToAPI().(*APITypeDMChannel))
-			}
-		}
-		util.WriteJSON(c, out)
-	}, "uid"))*/
 
-	r.GET("/api/v6/users/:uid/channels", MiddleTokenAuth(func(c *fasthttp.RequestCtx) {
+		ch, err := CreateDMChannel(me.ID, rcp.ID)
+		if err != nil {
+			util.WriteJSONStatus(c, 500, &APIResponseError{0, "Unknown error"})
+			return
+		}
+		util.WriteJSON(c, ch.ToAPI().(*APITypeDMChannel))
+	}, "uid"))
+
+	r.GET("/api/v6/users/:uid/channels", MwTokenAuth(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		// Something *should* be done here
 		chs := me.Channels()
