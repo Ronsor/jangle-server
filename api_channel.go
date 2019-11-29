@@ -60,7 +60,7 @@ func InitRestChannel(r *router.Router) {
 			Nonce: fmt.Sprintf("%v", req.TTS),
 			Author: &User{ID: me.ID},
 			Timestamp: time.Now().Unix(),
-			Embeds: []*MessageEmbed{req.Embed}
+			Embeds: []*MessageEmbed{req.Embed},
 		}
 
 		ch.CreateMessage(m)

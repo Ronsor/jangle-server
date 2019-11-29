@@ -63,6 +63,7 @@ type APITypeMessageReaction struct {
 	Emoji *APITypeEmoji `json:"emoji"`
 	Count int `json:"count"`
 	Me bool `json:"me"`
+	user *User `json:"-"`
 }
 
 // "Safe" Message type

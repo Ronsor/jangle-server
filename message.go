@@ -8,21 +8,23 @@ import (
 
 const (
 	MSGTYPE_DEFAULT = 0
-	MSGTYPE_DUMMY = 0x42424242
 	// TODO: the rest
+	MSGTYPE_PATCH_REACT = 0x42424201 // wrong on so many levels
 )
 
 type MessageEmbed struct {
-
+	// There will be something here
 }
 
 type MessageReaction struct {
 	Count int `bson:"count"`
 	Emoji Emoji `bson:"emoji"`
+	User *User `bson:"user"`
 }
 
 type Message struct {
 	ID snowflake.ID `bson:"_id"`
+	TargetID snowflake.ID `bson:"target_id"` // Target message ID for a sort of "patch"
 	ChannelID snowflake.ID `bson:"channel_id"`
 	GuildID snowflake.ID `bson:"guild_id"`
 
@@ -77,9 +79,16 @@ func (m *Message) ToAPI() (ret *APITypeMessage) {
 
 	ret.Author = m.Author.ToAPI(true)
 	ret.Mentions = []*APITypeUser{}
+	ret.Reactions = []*APITypeMessageReaction{}
 	for _, v := range m.Mentions {
 		ret.Mentions = append(ret.Mentions, v.ToAPI(true))
 	}
-
+	for _, v := range m.Reactions {
+		ret.Reactions = append(ret.Reactions, &APITypeMessageReaction{
+			Emoji: v.Emoji.ToAPI(true),
+			Count: v.Count,
+			user: v.User,
+		})
+	}
 	return
 }
