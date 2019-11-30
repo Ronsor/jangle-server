@@ -11,7 +11,9 @@ import (
 const (
 	APIERR_UNKNOWN_USER = 10013
 	APIERR_UNKNOWN_CHANNEL = 10003
+	APIERR_UNKNOWN_MESSAGE = 10008
 	APIERR_UNAUTHORIZED = 40001
+	APIERR_CANT_EDIT_MESSAGE = 50005
 	// TODO fill in the rest of the magic numbers
 )
 
@@ -27,7 +29,7 @@ type responseError APIResponseError // TODO: get rid of this
 type APITypeUser struct {
 	ID snowflake.ID `json:"id,string"`
 	Username string `json:"username"`
-	Discriminator int `json:"discriminator,string"`
+	Discriminator string `json:"discriminator"`
 	AvatarHash string `json:"avatar"`
 
 	Bot bool `json:"bot,omitempty"`
@@ -41,7 +43,7 @@ type APITypeUser struct {
 
 	Premium bool `json:"premium"`
 	Mobile bool `json:"mobile"`
-	Phone *string `json:"phone"`
+	Phone *string `json:"phone,omitempty"`
 }
 
 // "Safe" Channel type that represents any channel
@@ -55,7 +57,7 @@ type APITypeDMChannel struct {
 	ID snowflake.ID `json:"id,string"`
 	Type int `json:"type"`
 	LastMessageID snowflake.ID `json:"last_message_id,string"`
-	Recipients []snowflake.ID `json:"recipients"`
+	Recipients []*APITypeUser `json:"recipients"`
 }
 
 // "Safe" MessageReaction type

@@ -34,8 +34,7 @@ func InitRestChannel(r *router.Router) {
 			// This is gonna be horrible to implement
 			panic("TODO")
 		} else {
-			err := util.ReadPostJSON(c, &req)
-			if err != nil {
+			if util.ReadPostJSON(c, &req) != nil {
 				util.WriteJSONStatus(c, 400, &APIResponseError{0, "Malformed request body"})
 				return
 			}
@@ -57,15 +56,181 @@ func InitRestChannel(r *router.Router) {
 		m := &Message{
 			Content: req.Content,
 			TTS: req.TTS,
-			Nonce: fmt.Sprintf("%v", req.TTS),
+			Nonce: fmt.Sprintf("%v", req.Nonce),
 			Author: &User{ID: me.ID},
 			Timestamp: time.Now().Unix(),
-			Embeds: []*MessageEmbed{req.Embed},
+			Embeds: []*MessageEmbed{},
 		}
+
+		if req.Embed != nil { m.Embeds = append(m.Embeds, req.Embed) }
 
 		ch.CreateMessage(m)
 
+		util.WriteJSON(c, m.ToAPI())
+
 		return
 	}))
+
+	r.GET("/api/v6/channels/:cid/messages/:mid", MwTokenAuth(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		cid := c.UserValue("cid").(string)
+		mid := c.UserValue("mid").(string)
+
+		csnow, err := snowflake.ParseString(cid)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			return
+		}
+
+		msnow, err := snowflake.ParseString(mid)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
+			return
+		}
+
+		msg, err := GetMessageByID(msnow)
+		if err != nil || msg.ChannelID != csnow {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
+			return
+		}
+
+		_ = me
+
+		util.WriteJSON(c, msg.ToAPI())
+
+		return
+	}))
+
+	type APIReqPatchChannelsCidMessagesMid struct {
+		Content *string `json:"content"`
+		Embed *MessageEmbed `json:"embed"`
+		Flags int `json:"flags"` // Ignored
+	}
+
+	r.PATCH("/api/v6/channels/:cid/messages/:mid", MwTokenAuth(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		var req APIReqPatchChannelsCidMessagesMid
+		cid := c.UserValue("cid").(string)
+		mid := c.UserValue("mid").(string)
+		if util.ReadPostJSON(c, &req) != nil {
+			util.WriteJSONStatus(c, 400, &APIResponseError{0, "Malformed request body"})
+			return
+		}
+
+		csnow, err := snowflake.ParseString(cid)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			return
+		}
+
+		msnow, err := snowflake.ParseString(mid)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
+			return
+		}
+
+		msg, err := GetMessageByID(msnow)
+		if err != nil || msg.ChannelID != csnow {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
+			return
+		}
+
+		if msg.Author.ID != me.ID {
+			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_CANT_EDIT_MESSAGE, "Can't delete message sent by other user"})
+			return
+		}
+
+		if req.Content != nil {
+			msg.Content = *req.Content
+		}
+
+		if req.Embed != nil {
+			msg.Embeds = []*MessageEmbed{req.Embed}
+		}
+
+		msg.Save()
+
+		util.WriteJSON(c, msg.ToAPI())
+
+		return
+	}))
+
+	r.DELETE("/api/v6/channels/:cid/messages/:mid", MwTokenAuth(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		cid := c.UserValue("cid").(string)
+		mid := c.UserValue("mid").(string)
+
+		csnow, err := snowflake.ParseString(cid)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			return
+		}
+
+		msnow, err := snowflake.ParseString(mid)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
+			return
+		}
+
+		msg, err := GetMessageByID(msnow)
+
+		if msg.Author.ID != me.ID {
+			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_CANT_EDIT_MESSAGE, "Can't delete message sent by another user"})
+			return
+		}
+
+		if err != nil || msg.ChannelID != csnow {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
+			return
+		}
+
+		if msg.Deleted {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
+			return
+		}
+
+		msg.Deleted = true
+
+		msg.Save()
+
+		c.SetStatusCode(204) // No Content
+	}))
+
+	r.PUT("/api/v6/channels/:cid/messages/:mid/reactions/:emoji/:uid", MwTokenAuth(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		cid := c.UserValue("cid").(string)
+		mid := c.UserValue("mid").(string)
+
+		csnow, err := snowflake.ParseString(cid)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			return
+		}
+
+		msnow, err := snowflake.ParseString(mid)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
+			return
+		}
+
+		msg, err := GetMessageByID(msnow)
+
+		if err != nil || msg.ChannelID != csnow || msg.Deleted {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
+			return
+		}
+
+		emoji, err := GetEmojiFromString(c.UserValue("emoji").(string))
+
+		if err != nil {
+			util.WriteJSONStatus(c, 400, &APIResponseError{0, "Nope"})
+			return
+		}
+
+		_,_,_,_,_ = me, csnow, msnow, msg, emoji
+
+		c.SetStatusCode(204) // No Content
+	}, "uid"))
+
 }
 

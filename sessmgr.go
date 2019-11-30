@@ -22,7 +22,7 @@ func msDecodeBSON(in, out interface{}) error {
 
 func InitSessionManager() {
 	go RunSessionManager("msgs", func (dm bson.M, evt bson.M) error {
-		log.Println("Yo: ", evt)
+		log.Println(evt)
 		id := fmt.Sprintf("%v", evt["documentKey"].(bson.M)["_id"])
 		snow, err := snowflake.ParseString(id)
 		if err != nil { return err }
@@ -50,7 +50,6 @@ func InitSessionManager() {
 					return err
 				}
 				if content, ok := uf["content"].(string); ok {
-					log.Println("Sending content update")
 					SessSub.TryPub(gwPacket{
 						Op: GW_OP_DISPATCH,
 						Type: GW_EVT_MESSAGE_UPDATE,
@@ -58,6 +57,24 @@ func InitSessionManager() {
 							"id": m.ID,
 							"channel_id": m.ChannelID,
 							"content": content,
+						},
+					}, m.ChannelID.String())
+				}
+				if deleted, ok := uf["deleted"].(bool); ok && deleted {
+					payload := bson.M{
+						"id": m.ID,
+						"channel_id": m.ChannelID,
+					}
+
+					if m.GuildID != 0 { payload["guild_id"] = m.GuildID }
+
+					SessSub.TryPub(gwPacket{
+						Op: GW_OP_DISPATCH,
+						Type: GW_EVT_MESSAGE_DELETE,
+						Data: &gwEvtDataMessageDelete{
+							ID: m.ID,
+							ChannelID: m.ChannelID,
+							GuildID: m.GuildID,
 						},
 					}, m.ChannelID.String())
 				}
@@ -70,7 +87,7 @@ func InitSessionManager() {
 
 func RunSessionManager(col string, fn func (doc bson.M, evt bson.M) error) {
 	for {
-		s2 := DB.Msg.Session.New().DB("")
+		s2 := DB.Msg.Session.Copy().DB("")
 		pipeline := []bson.M{}
 		cstream, err := s2.C(col).Watch(pipeline, mgo.ChangeStreamOptions{MaxAwaitTimeMS:time.Second*5})
 		if err != nil { log.Println("SessionManager:", err); continue }

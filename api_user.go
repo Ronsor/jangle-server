@@ -13,17 +13,34 @@ import (
 func InitRestUser(r *router.Router) {
 	log.Println("Init /users Endpoints")
 
-	type APIRespGetUsersUidSettings *UserSettings
+	r.GET("/api/v6/users/:uid", MwTokenAuth(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		uid := c.UserValue("uid").(string)
+		if uid == "@me" {
+			util.WriteJSON(c, me.ToAPI(false))
+		} else {
+			usnow, err := snowflake.ParseString(uid)
+			if err != nil {
+				util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_USER, "User does not exist"})
+				return
+			}
+			user, err := GetUserByID(usnow)
+			if err != nil {
+				util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_USER, "User does not exist"})
+				return
+			}
+			util.WriteJSON(c, user.ToAPI(true))
+		}
+	}))
 
 	r.GET("/api/v6/users/:uid/settings", MwTokenAuth(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
-		util.WriteJSON(c, APIRespGetUsersUidSettings(me.Settings))
+		util.WriteJSON(c, me.Settings)
 	}, "uid"))
 
 	type APIReqPostUsersUidChannels struct {
 		RecipientID snowflake.ID `json:"recipient_id"`
 	}
-
 
 	r.POST("/api/v6/users/:uid/channels", MwTokenAuth(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)

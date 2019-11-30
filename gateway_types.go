@@ -121,3 +121,9 @@ type gwEvtDataReady struct {
 	SessionID snowflake.ID `json:"session_id"`
 }
 
+// Message delete event packet data
+type gwEvtDataMessageDelete struct {
+	ID snowflake.ID `json:"id"`
+	ChannelID snowflake.ID `json:"channel_id"`
+	GuildID snowflake.ID `json:"guild_id,omitempty"`
+}

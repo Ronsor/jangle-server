@@ -17,15 +17,49 @@ type MessageEmbed struct {
 	// There will be something here
 }
 
+/*
 type MessageReaction struct {
-	Count int `bson:"count"`
-	Emoji Emoji `bson:"emoji"`
-	User *User `bson:"user"`
+	Emoji *Emoji `bson:"emoji"`
+	Users []*User `bson:"users"`
 }
+
+type MessageReactions []*MessageReaction
+
+func (mr MessageReactions) ToAPI(curuser *User) (ret []*APITypeMessageReaction) {
+	ret = make([]*APITypeMessageReaction, 0, len(mr))
+	for k, v := range mr {
+		ret[k] = &APITypeMessageReaction{
+			Emoji: v.Emoji,
+			Count: len(v.Users),
+		}
+		if curuser != nil {
+			for _, v2 := range v.Users {
+				if v2.ID == curuser.ID {
+					ret[k].Me = true
+				}
+			}
+		}
+	}
+	return
+}
+
+func (mr MessageReactions) React(curuser *User, e *Emoji, addnew bool) error {
+	for _, v := range mr {
+		if v.Emoji.String() == e.String() {
+			for _, u := range v.Users {
+				if u.ID == curuser.ID { return nil }
+			}
+			v.Users = append(v.Users, curuser)
+			return nil
+		}
+	}
+	if addnew {
+		mr = append(mr, &MessageReaction{e, Users: []*User{&User{ID:curuser.ID}}})
+	}
+}*/
 
 type Message struct {
 	ID snowflake.ID `bson:"_id"`
-	TargetID snowflake.ID `bson:"target_id"` // Target message ID for a sort of "patch"
 	ChannelID snowflake.ID `bson:"channel_id"`
 	GuildID snowflake.ID `bson:"guild_id"`
 
@@ -45,7 +79,7 @@ type Message struct {
 
 	Attachments []interface{} `bson:"attachments"`
 	Embeds []*MessageEmbed `bson:"embeds"`
-	Reactions []*MessageReaction `bson:"reactions"`
+	Reactions interface{} `bson:"reactions"`
 
 	Nonce string `bson:"nonce"`
 	Pinned bool `bson:"pinned"`
@@ -55,6 +89,7 @@ type Message struct {
 	Flags int `bson:"flags"`
 
 	MiscData interface{} `bson:"misc_data"`
+	Deleted bool `bson:"deleted"`
 }
 
 func GetMessageByID(i snowflake.ID) (*Message, error) {
@@ -63,6 +98,11 @@ func GetMessageByID(i snowflake.ID) (*Message, error) {
 	err := c.Find(bson.M{"_id":i}).One(&m)
 	if err != nil { return nil, err }
 	return &m, nil
+}
+
+func (m *Message) Save() error {
+	c := DB.Msg.C("msgs")
+	return c.UpdateId(m.ID, bson.M{"$set":m})
 }
 
 func (m *Message) ToAPI() (ret *APITypeMessage) {
@@ -86,18 +126,17 @@ func (m *Message) ToAPI() (ret *APITypeMessage) {
 		Flags: m.Flags,
 	}
 
-	ret.Author = m.Author.ToAPI(true)
+	author, err := GetUserByID(m.Author.ID)
+	if err == nil {
+		ret.Author = author.ToAPI(true)
+	} else {
+		ret.Author = m.Author.ToAPI(true)
+	}
 	ret.Mentions = []*APITypeUser{}
 	ret.Reactions = []*APITypeMessageReaction{}
 	for _, v := range m.Mentions {
 		ret.Mentions = append(ret.Mentions, v.ToAPI(true))
 	}
-	for _, v := range m.Reactions {
-		ret.Reactions = append(ret.Reactions, &APITypeMessageReaction{
-			Emoji: v.Emoji.ToAPI(true),
-			Count: v.Count,
-			user: v.User,
-		})
-	}
+
 	return
 }

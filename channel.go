@@ -21,7 +21,7 @@ type Channel struct {
 	LastMessageID snowflake.ID `bson:"last_message_id"`
 
 	// DM/Group DM only
-	Recipients []snowflake.ID `bson:"recipients"`
+	RecipientIDs []snowflake.ID `bson:"recipient_ids"`
 
 	// Group DM only
 	OwnerID snowflake.ID `bson:"owner_id"`
@@ -42,6 +42,8 @@ type Channel struct {
 	// Guild Voice Channel only
 	Bitrate int `bson:"bitrate"`
 	UserLimit int `bson:"user_limit"`
+
+	Deleted bool `bson:"deleted"`
 }
 
 func CreateDMChannel(party1, party2 snowflake.ID) (*Channel, error) {
@@ -50,7 +52,7 @@ func CreateDMChannel(party1, party2 snowflake.ID) (*Channel, error) {
 	e := c.Find(bson.M{"recipients": bson.M{"$all": []snowflake.ID{party1,party2}}, "type": CHTYPE_DM}).One(&c2)
 	if e != nil {
 		c2.ID = flake.Generate()
-		c2.Recipients = []snowflake.ID{party1,party2}
+		c2.RecipientIDs = []snowflake.ID{party1,party2}
 		c2.Type = CHTYPE_DM
 		err := c.Insert(&c2)
 		if err != nil { return nil, err }
@@ -72,10 +74,19 @@ func GetChannelByID(ID snowflake.ID) (*Channel, error) {
 
 func (c *Channel) ToAPI() APITypeAnyChannel {
 	if c.Type == CHTYPE_DM {
+		rcp := []*APITypeUser{}
+		for _, v := range c.RecipientIDs {
+			u, err := GetUserByID(v)
+			if err != nil {
+				rcp = append(rcp, &APITypeUser{ID:v,Discriminator:"0000",Username:"Unknown"})
+			} else {
+				rcp = append(rcp, u.ToAPI(true))
+			}
+		}
 		return &APITypeDMChannel{
 			ID: c.ID,
 			Type: c.Type,
-			Recipients: c.Recipients,
+			Recipients: rcp,
 			LastMessageID: c.LastMessageID,
 		}
 	}
@@ -86,7 +97,17 @@ func (c *Channel) CreateMessage(m *Message) error {
 	d := DB.Msg.C("msgs")
 	m.ID = flake.Generate()
 	m.ChannelID = c.ID
-	return d.Insert(&m)
+	err := d.Insert(&m)
+	if err == nil {
+		c.LastMessageID = m.ID
+		return c.Save()
+	}
+	return err
+}
+
+func (c *Channel) Save() error {
+	d := DB.Core.C("channels")
+	return d.UpdateId(c.ID, bson.M{"$set":c})
 }
 
 func InitChannelStaging() {
@@ -94,6 +115,6 @@ func InitChannelStaging() {
 	c.Insert(&Channel{
 		ID: 1,
 		Type: CHTYPE_DM,
-		Recipients: []snowflake.ID{42,43},
+		RecipientIDs: []snowflake.ID{42,43},
 	})
 }

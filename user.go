@@ -39,7 +39,7 @@ type UserSettings struct {
 type User struct {
 	ID snowflake.ID `bson:"_id"`
 	Username string `bson:"username"`
-	Discriminator int `bson:"discriminator"`
+	Discriminator string `bson:"discriminator"`
 	Email string `bson:"email,omitempty"`
 
 	Bot bool `bson:"bot"`
@@ -137,7 +137,7 @@ func (u *User) FromAPI(in *APITypeUser) *User {
 // DMChannels returns the DM channels a user is in
 func (u *User) Channels() []*Channel {
 	ch := []*Channel{}
-	err := DB.Core.C("channels").Find(bson.M{"recipients":u.ID}).All(&ch)
+	err := DB.Core.C("channels").Find(bson.M{"recipient_ids":u.ID}).All(&ch)
 	if err != nil { return []*Channel{} }
 	return ch
 }
@@ -153,7 +153,7 @@ func InitUserStaging() {
 	c.Insert(&User{
 		ID: 42,
 		Username: "test1",
-		Discriminator: 1234,
+		Discriminator: "1234",
 		Email: "test@localhost",
 		PasswordHash: util.CryptPass("hello"),
 		Flags: USER_FLAG_STAFF | USER_FLAG_EARLYADOPTER,
@@ -164,7 +164,7 @@ func InitUserStaging() {
 	c.Insert(&User{
 		ID: 43,
 		Username: "hello",
-		Discriminator: 4242,
+		Discriminator: "4242",
 		Email: "test2@localhost",
 		PasswordHash: util.CryptPass("hello"),
 		Flags: USER_FLAG_EARLYADOPTER,

@@ -2,18 +2,38 @@ package main
 
 import (
 	"github.com/bwmarrin/snowflake"
+	"fmt"
+
+	"strings"
 )
 
-/* Discord-compatible Emoji structure */
-
+// Discord-compatible Emoji structure
 type Emoji struct {
 	ID snowflake.ID `bson:"id"`
 	Name string `bson:"name"`
 	Roles []snowflake.ID `bson:"roles"`
 	User *User `bson:"user"`
 	RequireColons bool `bson:"require_colons"`
-	Managed /* ? */ bool `bson:"managed"`
+	Managed /* what's this for? */ bool `bson:"managed"`
 	Animated bool `bson:"animated"`
+}
+
+func GetEmojiFromString(s string) (*Emoji, error) {
+	sa := strings.Split(s, ":")
+	if len(sa) == 1 {
+		return &Emoji{Name: sa[0]}, nil
+	}
+	return nil, fmt.Errorf("Unsupported")
+}
+
+func (e *Emoji) String() string {
+	if e.ID == 0 {
+		return e.Name
+	} else {
+		return e.Name + ":" + e.ID.String()
+	}
+	panic("unreachable")
+	return ""
 }
 
 func (e *Emoji) ToAPI(lite bool) *APITypeEmoji {
@@ -32,3 +52,4 @@ func (e *Emoji) ToAPI(lite bool) *APITypeEmoji {
 	}
 	return ret
 }
+

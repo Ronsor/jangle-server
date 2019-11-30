@@ -101,12 +101,11 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 	go func() {
 		for r := range sess.EvtChan {
 			if sess.Wsc.Closed {
-				log.Println("E")
+				log.Println("Terminating session.")
 				break
 			}
 			pkt := r.(gwPacket)
 			pkt.Seq = sess.Seq
-			log.Println(pkt.Data)
 			wsc.Send(&pkt)
 			sess.Seq++
 		}
@@ -117,7 +116,6 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 		if err != nil {
 			break
 		}
-		log.Println("got pkt:", pkt)
 		switch pkt.Op {
 			case GW_OP_HEARTBEAT:
 				wsc.Send(&gwPacket{Op: GW_OP_HEARTBEAT_ACK})
