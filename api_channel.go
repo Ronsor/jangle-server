@@ -4,6 +4,7 @@ import (
 	"log"
 	"fmt"
 	"time"
+	"strconv"
 
 	"jangled/util"
 
@@ -71,6 +72,46 @@ func InitRestChannel(r *router.Router) {
 		return
 	}))
 
+	r.GET("/api/v6/channels/:cid/messages", MwTokenAuth(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		cid := c.UserValue("cid").(string)
+
+		_ = me
+
+		csnow, err := snowflake.ParseString(cid)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			return
+		}
+
+		ch, err := GetChannelByID(csnow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			return
+		}
+
+		around, _ := snowflake.ParseBytes(c.FormValue("around"))
+		before, _ := snowflake.ParseBytes(c.FormValue("before"))
+		after, _ := snowflake.ParseBytes(c.FormValue("after"))
+		limit, err := strconv.Atoi(string(c.FormValue("limit")))
+		if err != nil {
+			limit = 50
+		}
+
+		msgs, err := ch.Messages(around, before, after, limit)
+
+		if err != nil {
+			util.WriteJSONStatus(c, 500, &APIResponseError{0, "An internal error occurred"})
+			return
+		}
+
+		outmsgs := []*APITypeMessage{}
+		for _, v := range msgs { outmsgs = append(outmsgs, v.ToAPI()) }
+
+		util.WriteJSON(c, outmsgs)
+		return
+	}))
+
 	r.GET("/api/v6/channels/:cid/messages/:mid", MwTokenAuth(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		cid := c.UserValue("cid").(string)
@@ -130,13 +171,13 @@ func InitRestChannel(r *router.Router) {
 		}
 
 		msg, err := GetMessageByID(msnow)
-		if err != nil || msg.ChannelID != csnow {
+		if err != nil || msg.ChannelID != csnow || msg.Deleted {
 			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
 			return
 		}
 
 		if msg.Author.ID != me.ID {
-			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_CANT_EDIT_MESSAGE, "Can't delete message sent by other user"})
+			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_CANT_EDIT_MESSAGE, "Can't edit message sent by another user"})
 			return
 		}
 
@@ -147,6 +188,8 @@ func InitRestChannel(r *router.Router) {
 		if req.Embed != nil {
 			msg.Embeds = []*MessageEmbed{req.Embed}
 		}
+
+		msg.EditedTimestamp = time.Now().Unix()
 
 		msg.Save()
 
@@ -179,12 +222,7 @@ func InitRestChannel(r *router.Router) {
 			return
 		}
 
-		if err != nil || msg.ChannelID != csnow {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
-			return
-		}
-
-		if msg.Deleted {
+		if err != nil || msg.ChannelID != csnow || msg.Deleted {
 			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
 			return
 		}

@@ -113,7 +113,6 @@ func (m *Message) ToAPI() (ret *APITypeMessage) {
 		Member: m.Member,
 		Content: m.Content,
 		Timestamp: time.Unix(m.Timestamp, 0),
-		EditedTimestamp: time.Unix(m.EditedTimestamp, 0),
 		TTS: m.TTS,
 		MentionEveryone: m.MentionEveryone,
 		MentionRoles: m.MentionRoles,
@@ -136,6 +135,11 @@ func (m *Message) ToAPI() (ret *APITypeMessage) {
 	ret.Reactions = []*APITypeMessageReaction{}
 	for _, v := range m.Mentions {
 		ret.Mentions = append(ret.Mentions, v.ToAPI(true))
+	}
+
+	if m.EditedTimestamp != 0 {
+		ts := time.Unix(m.EditedTimestamp, 0)
+		ret.EditedTimestamp = &ts
 	}
 
 	return

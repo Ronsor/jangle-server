@@ -17,6 +17,7 @@ type responseGetGateway struct {
 const (
 	GW_OP_HEARTBEAT_ACK = 11
 	GW_OP_HELLO = 10
+	GW_OP_UPDATE_STATUS = 3
 	GW_OP_IDENTIFY = 2
 	GW_OP_HEARTBEAT = 1
 	GW_OP_DISPATCH = 0

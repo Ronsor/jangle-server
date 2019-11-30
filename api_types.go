@@ -80,7 +80,7 @@ type APITypeMessage struct {
 
 	Content string `json:"content"`
 	Timestamp time.Time `json:"timestamp"`
-	EditedTimestamp time.Time `json:"edited_timestamp,omitempty"`
+	EditedTimestamp *time.Time `json:"edited_timestamp,omitempty"`
 
 	TTS bool `json:"tts"`
 

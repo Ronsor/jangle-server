@@ -9,7 +9,10 @@ import (
 const (
 	CHTYPE_GUILD_TEXT = 0
 	CHTYPE_DM = 1
-	// TODO: the rest
+	CHTYPE_GUILD_VOICE = 2
+	CHTYPE_GROUP_DM = 3
+	CHTYPE_GUILD_CATEGORY = 4
+	// WONTFIX: GUILD_NEWS, GUILD_STORE
 )
 
 // Channel is a Discord-compatible structure representing any type of channel
@@ -72,6 +75,40 @@ func GetChannelByID(ID snowflake.ID) (*Channel, error) {
 
 // TODO: GetChannelByGuild, GetChannelByRecipients, etc.
 
+func (c *Channel) CreateMessage(m *Message) error {
+	d := DB.Msg.C("msgs")
+	m.ID = flake.Generate()
+	m.ChannelID = c.ID
+	err := d.Insert(&m)
+	if err == nil {
+		c.LastMessageID = m.ID
+		return c.Save()
+	}
+	return err
+}
+
+func (c *Channel) Messages(around, before, after snowflake.ID, limit int) ([]*Message, error) {
+	d := DB.Msg.C("msgs")
+	idquery := bson.M{}
+	if before == 0 && after == 0 && around == 0 {
+		before = c.LastMessageID + 1
+	}
+	if around != 0 {
+		idquery["$gt"] = around - 0xFFFFFFFF
+		idquery["$lt"] = around + 0xFFFFFFFF
+	} else {
+		if before != 0 {
+			idquery["$lt"] = before
+		} else if after != 0 {
+			idquery["$gt"] = after
+		}
+	}
+	out := []*Message{}
+	err := d.Find(bson.M{"channel_id": c.ID, "_id": idquery}).Sort("-timestamp").Limit(limit).All(&out)
+	if err != nil { return nil, err }
+	return out, nil
+}
+
 func (c *Channel) ToAPI() APITypeAnyChannel {
 	if c.Type == CHTYPE_DM {
 		rcp := []*APITypeUser{}
@@ -91,18 +128,6 @@ func (c *Channel) ToAPI() APITypeAnyChannel {
 		}
 	}
 	return nil
-}
-
-func (c *Channel) CreateMessage(m *Message) error {
-	d := DB.Msg.C("msgs")
-	m.ID = flake.Generate()
-	m.ChannelID = c.ID
-	err := d.Insert(&m)
-	if err == nil {
-		c.LastMessageID = m.ID
-		return c.Save()
-	}
-	return err
 }
 
 func (c *Channel) Save() error {
