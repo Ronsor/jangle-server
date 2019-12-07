@@ -52,6 +52,11 @@ func InitRestChannel(r *router.Router) {
 			return
 		}
 
+		if !ch.HasPermissions(me, PERM_SEND_MESSAGES) {
+			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_MISSING_PERMISSIONS, "You don't have permission to do that"})
+			return
+		}
+
 		// Finally construct a minimal message object
 		// TODO: the rest lol
 		m := &Message{
@@ -90,6 +95,11 @@ func InitRestChannel(r *router.Router) {
 			return
 		}
 
+		if !ch.HasPermissions(me, PERM_VIEW_CHANNEL | PERM_READ_MESSAGE_HISTORY) {
+			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_MISSING_PERMISSIONS, "You don't have permission to do that"})
+			return
+		}
+
 		around, _ := snowflake.ParseBytes(c.FormValue("around"))
 		before, _ := snowflake.ParseBytes(c.FormValue("before"))
 		after, _ := snowflake.ParseBytes(c.FormValue("after"))
@@ -120,6 +130,17 @@ func InitRestChannel(r *router.Router) {
 		csnow, err := snowflake.ParseString(cid)
 		if err != nil {
 			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			return
+		}
+
+		ch, err := GetChannelByID(csnow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			return
+		}
+
+		if !ch.HasPermissions(me, PERM_VIEW_CHANNEL | PERM_READ_MESSAGE_HISTORY) {
+			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_MISSING_PERMISSIONS, "You don't have permission to do that"})
 			return
 		}
 
@@ -232,6 +253,90 @@ func InitRestChannel(r *router.Router) {
 		msg.Save()
 
 		c.SetStatusCode(204) // No Content
+	}))
+
+	r.PUT("/api/v6/channels/:cid/pins/:mid", MwTokenAuth(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		cid := c.UserValue("cid").(string)
+		mid := c.UserValue("mid").(string)
+
+		csnow, err := snowflake.ParseString(cid)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			return
+		}
+
+		ch, err := GetChannelByID(csnow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			return
+		}
+
+		if !ch.HasPermissions(me, PERM_MANAGE_MESSAGES) {
+			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_MISSING_PERMISSIONS, "You don't have permission to do that"})
+			return
+		}
+
+		msnow, err := snowflake.ParseString(mid)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
+			return
+		}
+
+		msg, err := GetMessageByID(msnow)
+
+		if err != nil || msg.ChannelID != csnow || msg.Deleted {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
+			return
+		}
+
+		msg.Pinned = true
+
+		msg.Save()
+
+		c.SetStatusCode(204)
+	}))
+
+	r.GET("/api/v6/channels/:cid/pins", MwTokenAuth(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		cid := c.UserValue("cid").(string)
+
+		_ = me
+
+		csnow, err := snowflake.ParseString(cid)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			return
+		}
+
+		ch, err := GetChannelByID(csnow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			return
+		}
+
+		if !ch.HasPermissions(me, PERM_VIEW_CHANNEL | PERM_READ_MESSAGE_HISTORY) {
+			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_MISSING_PERMISSIONS, "You don't have permission to do that"})
+			return
+		}
+
+		limit, err := strconv.Atoi(string(c.FormValue("limit")))
+		if err != nil || limit > 50 {
+			limit = 50
+		}
+
+		msgs, err := ch.Messages(0, 0, 0, limit, true)
+
+		if err != nil {
+			util.WriteJSONStatus(c, 500, &APIResponseError{0, "An internal error occurred"})
+			return
+		}
+
+		outmsgs := []*APITypeMessage{}
+		for _, v := range msgs { outmsgs = append(outmsgs, v.ToAPI()) }
+
+		util.WriteJSON(c, outmsgs)
+		return
 	}))
 
 	r.PUT("/api/v6/channels/:cid/messages/:mid/reactions/:emoji/:uid", MwTokenAuth(func(c *fasthttp.RequestCtx) {

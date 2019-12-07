@@ -15,6 +15,13 @@ const (
 	// WONTFIX: GUILD_NEWS, GUILD_STORE
 )
 
+type PermissionOverwrite struct {
+	ID snowflake.ID `json:"id"`
+	Type string `json:"type"` // Either "role" or "member"
+	Allow PermSet `json:"allow"`
+	Deny PermSet `json:"deny"`
+}
+
 // Channel is a Discord-compatible structure representing any type of channel
 type Channel struct {
 	ID snowflake.ID `bson:"_id"`
@@ -35,7 +42,7 @@ type Channel struct {
 	Position int `bson:"position"`
 	Name string `bson:"name"`
 	ParentID snowflake.ID `bson:"parent_id"`
-	PermissionOverwrites []interface{} `bson:"permission_overwrites"`
+	PermissionOverwrites []*PermissionOverwrite `bson:"permission_overwrites"`
 
 	// Guild Text Channel only
 	Topic string `bson:"topic"`
@@ -87,24 +94,30 @@ func (c *Channel) CreateMessage(m *Message) error {
 	return err
 }
 
-func (c *Channel) Messages(around, before, after snowflake.ID, limit int) ([]*Message, error) {
+func (c *Channel) Messages(around, before, after snowflake.ID, limit int, extra ...interface{} /* pinned bool */) ([]*Message, error) {
 	d := DB.Msg.C("msgs")
 	idquery := bson.M{}
-	if before == 0 && after == 0 && around == 0 {
-		before = c.LastMessageID + 1
-	}
+	wholequery := bson.M{"channel_id": c.ID}
 	if around != 0 {
 		idquery["$gt"] = around - 0xFFFFFFFF
 		idquery["$lt"] = around + 0xFFFFFFFF
+		wholequery["_id"] = idquery
 	} else {
 		if before != 0 {
 			idquery["$lt"] = before
+			wholequery["_id"] = idquery
 		} else if after != 0 {
 			idquery["$gt"] = after
+			wholequery["_id"] = idquery
+		}
+	}
+	if len(extra) > 0 {
+		if pinned, ok := extra[0].(bool); ok && pinned {
+			wholequery["pinned"] = true
 		}
 	}
 	out := []*Message{}
-	err := d.Find(bson.M{"channel_id": c.ID, "_id": idquery}).Sort("-timestamp").Limit(limit).All(&out)
+	err := d.Find(wholequery).Sort("-timestamp").Limit(limit).All(&out)
 	if err != nil { return nil, err }
 	return out, nil
 }
@@ -128,6 +141,16 @@ func (c *Channel) ToAPI() APITypeAnyChannel {
 		}
 	}
 	return nil
+}
+
+func (c *Channel) HasPermissions(u *User, p PermSet) bool {
+	if c.Type == CHTYPE_DM {
+		for _, v := range c.RecipientIDs {
+			if v == u.ID { return true }
+		}
+		return false
+	}
+	return false
 }
 
 func (c *Channel) Save() error {

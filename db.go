@@ -28,6 +28,9 @@ func InitDB() {
 
 	DB.Core.C("channels").EnsureIndex(mgo.Index{Name:"idx_recipients", Key: []string{"recipients"}})
 
+	DB.Msg.C("msgs").EnsureIndex(mgo.Index{Name:"idx_pinned", Key: []string{"channel_id", "pinned"}})
+
+
 	if *flgStaging {
 		InitUserStaging()
 		InitChannelStaging()
