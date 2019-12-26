@@ -9,7 +9,7 @@ import (
 
 // Discord-compatible Emoji structure
 type Emoji struct {
-	ID snowflake.ID `bson:"id"`
+	ID snowflake.ID `bson:"_id"`
 	Name string `bson:"name"`
 	Roles []snowflake.ID `bson:"roles"`
 	User *User `bson:"user"`

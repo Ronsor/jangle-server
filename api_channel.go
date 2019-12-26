@@ -70,7 +70,12 @@ func InitRestChannel(r *router.Router) {
 
 		if req.Embed != nil { m.Embeds = append(m.Embeds, req.Embed) }
 
-		ch.CreateMessage(m)
+		err = ch.CreateMessage(m)
+
+		if err != nil {
+			util.WriteJSONStatus(c, 500, &APIResponseError{0, "Failed to send message"})
+			return
+		}
 
 		util.WriteJSON(c, m.ToAPI())
 

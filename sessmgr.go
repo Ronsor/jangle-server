@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 	"fmt"
-	"time"
+//	"time"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/cskr/pubsub"
@@ -86,10 +86,10 @@ func InitSessionManager() {
 }
 
 func RunSessionManager(col string, fn func (doc bson.M, evt bson.M) error) {
+	s2 := DB.Msg.Session.Copy().DB("")
 	for {
-		s2 := DB.Msg.Session.Copy().DB("")
 		pipeline := []bson.M{}
-		cstream, err := s2.C(col).Watch(pipeline, mgo.ChangeStreamOptions{MaxAwaitTimeMS:time.Second*5})
+		cstream, err := s2.C(col).Watch(pipeline, mgo.ChangeStreamOptions{MaxAwaitTimeMS:5000})
 		if err != nil { log.Println("SessionManager:", err); continue }
 		var doc bson.M
 		for cstream.Next(&doc) {

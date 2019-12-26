@@ -56,6 +56,8 @@ type User struct {
 
 	PasswordHash string `bson:"password_hash"`
 	Settings *UserSettings `bson:"user_settings"`
+
+	LastMessageIDs map[snowflake.ID]snowflake.ID `bson:"read_last_message_ids"`
 }
 
 // GetUserByID returns a user by their unique ID
@@ -125,6 +127,13 @@ func (u *User) ToAPI(safe bool) *APITypeUser {
 		u2.Verified = &u.Verified
 	}
 	return u2
+}
+
+func (u *User) MarkRead(cid, mid snowflake.ID) {
+	if u.LastMessageIDs != nil {
+		u.LastMessageIDs = new(map[snowflake.ID]snowflake.ID)
+	}
+	u.LastMessageIDs[cid] = mid
 }
 
 // FromAPI merges a safe APITypeUser struct's properties
