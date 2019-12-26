@@ -80,7 +80,15 @@ func GetChannelByID(ID snowflake.ID) (*Channel, error) {
 	return &c2, nil
 }
 
-// TODO: GetChannelByGuild, GetChannelByRecipients, etc.
+func GetChannelsByGuild(GuildID snowflake.ID) ([]*Channel, error) {
+	var c2 []*Channel
+	c := DB.Core.C("channels")
+	e := c.Find(bson.M{"guild_id": GuildID}).All(&c2)
+	if e != nil {
+		return nil, e
+	}
+	return c2, nil
+}
 
 func (c *Channel) CreateMessage(m *Message) error {
 	d := DB.Msg.C("msgs")
@@ -138,6 +146,17 @@ func (c *Channel) ToAPI() APITypeAnyChannel {
 			Type: c.Type,
 			Recipients: rcp,
 			LastMessageID: c.LastMessageID,
+		}
+	} else if c.Type == CHTYPE_GUILD_TEXT {
+		return &APITypeGuildTextChannel{
+			ID: c.ID,
+			GuildID: c.GuildID,
+			Type: c.Type,
+			LastMessageID: c.LastMessageID,
+			Name: c.Name,
+			Topic: c.Topic,
+			NSFW: c.NSFW,
+			Position: c.Position,
 		}
 	}
 	return nil

@@ -131,7 +131,7 @@ func (u *User) ToAPI(safe bool) *APITypeUser {
 
 func (u *User) MarkRead(cid, mid snowflake.ID) {
 	if u.LastMessageIDs != nil {
-		u.LastMessageIDs = new(map[snowflake.ID]snowflake.ID)
+		u.LastMessageIDs = map[snowflake.ID]snowflake.ID{}
 	}
 	u.LastMessageIDs[cid] = mid
 }
