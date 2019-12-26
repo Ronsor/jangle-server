@@ -71,12 +71,24 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 			}
 			sess.Identity = &d
 			sess.EvtChan = SessSub.Sub()
+
+			guilds, err := GetGuildsByUserID(sess.User.ID)
+
+			if err != nil {
+				guilds = []*Guild{}
+			}
+
+			ugs := []*UnavailableGuild{}
+			for _, g := range guilds {
+				ugs = append(ugs, &UnavailableGuild{g.ID, true})
+			}
+
 			codec.Send(ws, &gwPacket{
 				GW_OP_DISPATCH,
 				&gwEvtDataReady{
 					Version: 6,
 					User: sess.User.ToAPI(false),
-					Guilds: []*UnavailableGuild{},
+					Guilds: ugs,
 					PrivateChannels: []interface{}{},
 				},
 				GW_EVT_READY,
@@ -84,10 +96,17 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 				nil,
 			})
 			sess.Seq++
+
 			for _, ch := range sess.User.Channels() {
 				codec.Send(ws, mkGwPkt(GW_OP_DISPATCH, ch.ToAPI(), sess.Seq, GW_EVT_CHANNEL_CREATE))
 				log.Println(ch.ID.String())
 				SessSub.AddSub(sess.EvtChan, ch.ID.String())
+				sess.Seq++
+			}
+
+			for _, g := range guilds {
+				codec.Send(ws, mkGwPkt(GW_OP_DISPATCH, g.ToAPI(sess.User.ID), sess.Seq, GW_EVT_GUILD_CREATE))
+				SessSub.AddSub(sess.EvtChan, g.ID.String())
 				sess.Seq++
 			}
 			break

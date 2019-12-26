@@ -175,6 +175,7 @@ func InitGuildStaging() {
 	c := DB.Core.C("guilds")
 	c.Insert(&Guild{
 		ID: 84,
-		Name: "A test"
+		Name: "A test",
+		OwnerID: 42,
 	})
 }

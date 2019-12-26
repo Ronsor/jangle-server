@@ -33,7 +33,10 @@ func InitDB() {
 	DB.Msg.C("guilds").EnsureIndex(mgo.Index{Name:"idx_member", Key: []string{"members.user"}})
 	if *flgStaging {
 		InitUserStaging()
-		InitChannelStaging()
 		log.Printf("staging: added dummy users")
+		InitChannelStaging()
+		log.Printf("staging: added dummy channels")
+		InitGuildStaging()
+		log.Printf("staging: added dummy guilds")
 	}
 }
