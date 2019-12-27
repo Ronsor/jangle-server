@@ -7,6 +7,8 @@ import (
 	"github.com/globalsign/mgo/bson"
 )
 
+const GUILD_DEFAULT_PERMS = PermSet(104324161)
+
 // Represents a currently unavailable guild
 // Used in GW_EVT_READY
 type UnavailableGuild struct {

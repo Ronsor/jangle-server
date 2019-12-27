@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/bwmarrin/snowflake"
 	"github.com/globalsign/mgo/bson"
 )
@@ -166,6 +168,27 @@ func (c *Channel) ToAPI() APITypeAnyChannel {
 		}
 	}
 	return nil
+}
+
+func (c *Channel) Guild() (*Guild, error) {
+	if c.Type != CHTYPE_GUILD_TEXT {
+		return nil, fmt.Errorf("This is not a guild channel")
+	}
+	return GetGuildByID(c.GuildID)
+}
+
+func (c *Channel) GetPermissions(u *User) PermSet {
+	if c.Type == CHTYPE_DM {
+		return PERM_EVERYTHING
+	}
+	if c.Type == CHTYPE_GUILD_TEXT {
+		gd, err := c.Guild()
+		if err != nil { return 0 }
+		perm := gd.GetPermissions(u)
+		for _, v := range {
+			
+		}
+	}
 }
 
 func (c *Channel) HasPermissions(u *User, p PermSet) bool {
