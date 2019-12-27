@@ -7,7 +7,7 @@ import (
 	"github.com/globalsign/mgo/bson"
 )
 
-const GUILD_DEFAULT_PERMS = PermSet(104324161)
+const GUILD_EVERYONE_DEFAULT_PERMS = PermSet(104324161)
 
 // Represents a currently unavailable guild
 // Used in GW_EVT_READY
@@ -86,6 +86,33 @@ type Guild struct {
 
 }
 
+func CreateGuild(u *User, g *Guild) (*Guild, error) {
+	g.ID = flake.Generate()
+	g.OwnerID = u.ID
+	g.Roles = []*Role{
+		&Role{
+			ID: g.ID,
+			Name: "@everyone",
+			Permissions: GUILD_EVERYONE_DEFAULT_PERMS,
+		},
+	}
+	c := DB.Core.C("guilds")
+	err := c.Insert(g)
+	if err != nil { return nil, err }
+	err = g.AddMember(u.ID, false)
+	if err != nil {
+		// TODO: remove the guild
+		// use transactions?
+		return nil, err
+	}
+	err = g.CreateChannel(&Channel{
+		Name: "general",
+		Type: CHTYPE_GUILD_TEXT,
+	})
+	if err != nil { return g, err }
+	return g, nil
+}
+
 func GetGuildByID(ID snowflake.ID) (*Guild, error) {
 	var g2 Guild
 	c := DB.Core.C("guilds")
@@ -127,6 +154,13 @@ func (g *Guild) GetMember(UserID snowflake.ID) (*GuildMember, error) {
 		return nil, &APIResponseError{APIERR_UNKNOWN_MEMBER, "The member specified does not exist"}
 	}
 	return m, nil
+}
+
+func (g *Guild) GetPermissions(u *User) PermSet {
+	if g.OwnerID == u.ID {
+		return PERM_EVERYTHING // PERM_ADMINISTRATOR?
+	}
+	return 0 // TODO: the rest
 }
 
 func (g *Guild) Channels() ([]*Channel, error) {

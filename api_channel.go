@@ -52,7 +52,7 @@ func InitRestChannel(r *router.Router) {
 			return
 		}
 
-		if !ch.HasPermissions(me, PERM_SEND_MESSAGES) {
+		if !ch.GetPermissions(me).Has(PERM_SEND_MESSAGES) {
 			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_MISSING_PERMISSIONS, "You don't have permission to do that"})
 			return
 		}
@@ -100,7 +100,7 @@ func InitRestChannel(r *router.Router) {
 			return
 		}
 
-		if !ch.HasPermissions(me, PERM_VIEW_CHANNEL | PERM_READ_MESSAGE_HISTORY) {
+		if !ch.GetPermissions(me).Has(PERM_VIEW_CHANNEL | PERM_READ_MESSAGE_HISTORY) {
 			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_MISSING_PERMISSIONS, "You don't have permission to do that"})
 			return
 		}
@@ -144,7 +144,7 @@ func InitRestChannel(r *router.Router) {
 			return
 		}
 
-		if !ch.HasPermissions(me, PERM_VIEW_CHANNEL | PERM_READ_MESSAGE_HISTORY) {
+		if !ch.GetPermissions(me).Has(PERM_VIEW_CHANNEL | PERM_READ_MESSAGE_HISTORY) {
 			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_MISSING_PERMISSIONS, "You don't have permission to do that"})
 			return
 		}
@@ -277,7 +277,7 @@ func InitRestChannel(r *router.Router) {
 			return
 		}
 
-		if !ch.HasPermissions(me, PERM_MANAGE_MESSAGES) {
+		if !ch.GetPermissions(me).Has(PERM_MANAGE_MESSAGES) {
 			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_MISSING_PERMISSIONS, "You don't have permission to do that"})
 			return
 		}
@@ -320,7 +320,7 @@ func InitRestChannel(r *router.Router) {
 			return
 		}
 
-		if !ch.HasPermissions(me, PERM_VIEW_CHANNEL | PERM_READ_MESSAGE_HISTORY) {
+		if !ch.GetPermissions(me).Has(PERM_VIEW_CHANNEL | PERM_READ_MESSAGE_HISTORY) {
 			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_MISSING_PERMISSIONS, "You don't have permission to do that"})
 			return
 		}

@@ -185,12 +185,34 @@ func (c *Channel) GetPermissions(u *User) PermSet {
 		gd, err := c.Guild()
 		if err != nil { return 0 }
 		perm := gd.GetPermissions(u)
-		for _, v := range {
-			
+		mem, err := gd.GetMember(u.ID)
+		if err != nil { return 0 }
+		var uOvw *PermissionOverwrite
+		var uRoles = map[snowflake.ID]bool{}
+		for _, v := range mem.Roles {
+			uRoles[v] = true
 		}
+		for _, v := range c.PermissionOverwrites {
+			if v.ID == u.ID {
+				uOvw = v
+				continue
+			}
+			if !uRoles[v.ID] {
+				continue
+			}
+			perm |= v.Allow
+			perm ^= v.Deny
+		}
+		if uOvw != nil {
+			perm |= uOvw.Allow
+			perm ^= uOvw.Deny
+		}
+		return perm
 	}
+	return 0
 }
 
+// HasPermissions() is deprecated; Use GetPermissions().Has()
 func (c *Channel) HasPermissions(u *User, p PermSet) bool {
 	if c.Type == CHTYPE_DM {
 		for _, v := range c.RecipientIDs {
