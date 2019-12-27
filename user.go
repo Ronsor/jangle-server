@@ -57,6 +57,7 @@ type User struct {
 	PasswordHash string `bson:"password_hash"`
 	Settings *UserSettings `bson:"user_settings"`
 
+	Presence *gwPktDataUpdateStatus `bson:"presence"`
 	LastMessageIDs map[snowflake.ID]snowflake.ID `bson:"read_last_message_ids"`
 }
 

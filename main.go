@@ -42,6 +42,9 @@ func main() {
 	log.Printf("info: initialized mongodb")
 
 	r := router.New()
+	r.PanicHandler = func (c *fasthttp.RequestCtx, e interface{}) {
+		log.Printf("Internal error: %v", e)
+	}
 
 	r.GET("/version.txt", func (c *fasthttp.RequestCtx) { c.WriteString(VERSION) })
 	InitRestUser(r)

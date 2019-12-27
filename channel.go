@@ -148,6 +148,11 @@ func (c *Channel) ToAPI() APITypeAnyChannel {
 			LastMessageID: c.LastMessageID,
 		}
 	} else if c.Type == CHTYPE_GUILD_TEXT {
+		ovw := []*APITypePermissionOverwrite{}
+		for _, v := range c.PermissionOverwrites {
+			x := APITypePermissionOverwrite(*v)
+			ovw = append(ovw, &x)
+		}
 		return &APITypeGuildTextChannel{
 			ID: c.ID,
 			GuildID: c.GuildID,
@@ -157,6 +162,7 @@ func (c *Channel) ToAPI() APITypeAnyChannel {
 			Topic: c.Topic,
 			NSFW: c.NSFW,
 			Position: c.Position,
+			PermissionOverwrites: ovw,
 		}
 	}
 	return nil

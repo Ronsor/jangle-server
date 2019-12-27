@@ -56,8 +56,10 @@ type APITypeUser struct {
 // "Safe" Channel type that represents any channel
 type APITypeAnyChannel interface {
 	// There's nothing here
-	// Should there be?
 }
+
+// "Safe" Permission Overwrite type
+type APITypePermissionOverwrite PermissionOverwrite
 
 // "Safe" DM Channel type
 type APITypeDMChannel struct {
@@ -79,7 +81,7 @@ type APITypeGuildTextChannel struct {
 	NSFW bool `json:"nsfw"`
 	Position int `json:"position"`
 
-	PermissionOverwrites []interface{} `json:"permission_overwrites"`
+	PermissionOverwrites []*APITypePermissionOverwrite `json:"permission_overwrites"`
 	RateLimitPerUser int `json:"rate_limit_per_user,omitempty"`
 	LastPinTimestamp time.Time `json:"last_pin_timestamp"`
 }
@@ -141,13 +143,23 @@ type APITypeEmoji struct {
 type APITypeGuildMember struct {
 	User *APITypeUser `json:"user"`
 	Nick string `json:"nick,omitempty"`
-	Roles []snowflake.ID `json:"roles,omitempty"`
+	Roles []snowflake.ID `json:"roles"`
 	JoinedAt time.Time `json:"joined_at"`
 	Deaf bool `json:"deaf"`
 	Mute bool `json:"mute"`
 }
 
-type APITypeRole struct{}
+// "Safe" Role type
+type APITypeRole struct {
+	ID snowflake.ID `json:"id,string"`
+	Name string `json:"name"`
+	Color int `json:"color"`
+	Hoist bool `json:"hoist"`
+	Position int `json:"position"`
+	Permissions PermSet `json:"permission"`
+	Managed bool `json:"managed"`
+	Mentionable bool `json:"mentionable"`
+}
 
 // "Safe" Guild type
 type APITypeGuild struct {
@@ -187,8 +199,9 @@ type APITypeGuild struct {
 	MemberCount int `json:"member_count,omitempty"`
 	Members []*APITypeGuildMember `json:"members"`
 	Channels []APITypeAnyChannel `json:"channels"`
-	Presences []interface{} `json:"presences"`
+	Presences []*APITypePresenceUpdate `json:"presences"`
 	MaxPresences int `json:"max_presences,omitempty"` // Should be ~5k (maybe 10k)?
+	VoiceStates []interface{} `json:"voice_states"`
 
 	Description string `json:"description,omitempty"`
 	Banner string `json:"banner,omitempty"`
@@ -196,3 +209,6 @@ type APITypeGuild struct {
 	PremiumTier int `json:"premium_tier"`
 	PreferredLocale string `json:"preferred_locale"`
 }
+
+// "Safe" Presence Update type
+type APITypePresenceUpdate gwEvtDataPresenceUpdate

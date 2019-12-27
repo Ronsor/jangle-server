@@ -26,7 +26,9 @@ type GuildMember struct {
 
 func (gm *GuildMember) ToAPI() *APITypeGuildMember {
 	u, _ := GetUserByID(gm.UserID)
-	return &APITypeGuildMember{u.ToAPI(true), gm.Nick, gm.Roles, time.Unix(gm.JoinedAt, 0), gm.Deaf, gm.Mute}
+	roles := gm.Roles
+	if roles == nil { roles = []snowflake.ID{} }
+	return &APITypeGuildMember{u.ToAPI(true), gm.Nick, roles, time.Unix(gm.JoinedAt, 0), gm.Deaf, gm.Mute}
 }
 
 type Role struct {
@@ -38,6 +40,11 @@ type Role struct {
 	Permissions PermSet `bson:"permission"`
 	Managed bool `bson:"managed"`
 	Mentionable bool `bson:"mentionable"`
+}
+
+func (r *Role) ToAPI() *APITypeRole {
+	x := APITypeRole(*r)
+	return &x
 }
 
 type Guild struct {
@@ -90,7 +97,7 @@ func GetGuildByID(ID snowflake.ID) (*Guild, error) {
 func GetGuildsByUserID(UserID snowflake.ID) ([]*Guild, error) {
 	var g2 []*Guild
 	c := DB.Core.C("guilds")
-	err := c.Find(bson.M{"members.user": UserID}).All(&g2)
+	err := c.Find(bson.M{"members." + UserID.String(): bson.M{"$exists":true}}).All(&g2)
 	if err != nil {
 		return nil, err
 	}
@@ -124,10 +131,14 @@ func (g *Guild) Channels() ([]*Channel, error) {
 	return GetChannelsByGuild(g.ID)
 }
 
-func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID */) *APITypeGuild {
+func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID, IncludeMembers bool */) *APITypeGuild {
 	var oUid snowflake.ID
+	var includeMembers = true
 	if len(options) > 0 {
 		oUid = options[0].(snowflake.ID)
+	}
+	if len(options) > 1 {
+		includeMembers = options[1].(bool)
 	}
 	out := &APITypeGuild{
 		ID: g.ID,
@@ -148,14 +159,32 @@ func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID */) *APIType
 		Banner: g.Banner,
 		PremiumTier: g.PremiumTier,
 		PreferredLocale: g.PreferredLocale,
+		MemberCount: len(g.Members),
 		MaxPresences: 5000,
+		VoiceStates: []interface{}{},
 	}
 	if oUid != 0 {
 		out.JoinedAt = time.Unix(g.Members[oUid].JoinedAt, 0)
 	}
+
 	out.Members = []*APITypeGuildMember{}
-	for _, v := range g.Members {
-		out.Members = append(out.Members, v.ToAPI())
+	out.Presences = []*APITypePresenceUpdate{}
+	if includeMembers {
+		for _, v := range g.Members {
+			mem := v.ToAPI()
+			out.Members = append(out.Members, mem)
+			psn, err := GetPresenceForUser(v.UserID)
+			if err != nil {
+				out.Presences = append(out.Presences, &APITypePresenceUpdate{
+					User: mem.User,
+					Roles: mem.Roles,
+					GuildID: g.ID,
+					Status: psn.Status,
+					Game: nil,
+					Nick: mem.Nick,
+				})
+			}
+		}
 	}
 
 	out.Channels = []APITypeAnyChannel{}
@@ -168,14 +197,42 @@ func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID */) *APIType
 		out.Channels = append(out.Channels, v.ToAPI())
 	}
 
+	out.Emojis = []*APITypeEmoji{}
+	for _, v := range g.Emojis {
+		out.Emojis = append(out.Emojis, v.ToAPI(false))
+	}
+
+	out.Roles = []*APITypeRole{}
+	for _, v := range g.Roles {
+		out.Roles = append(out.Roles, v.ToAPI())
+	}
+
 	return out
 }
 
 func InitGuildStaging() {
-	c := DB.Core.C("guilds")
-	c.Insert(&Guild{
+	guilds := DB.Core.C("guilds")
+	guilds.Insert(&Guild{
 		ID: 84,
 		Name: "A test",
 		OwnerID: 42,
+		Members: map[snowflake.ID]*GuildMember{
+			42: &GuildMember{UserID: 42},
+		},
+	})
+	chans := DB.Core.C("channels")
+	chans.Insert(&Channel{
+		ID: 85,
+		GuildID: 84,
+		Name: "nonsense-chat",
+		Topic: "Ain't nothin' worth seein' here",
+		NSFW: false,
+	})
+	chans.Insert(&Channel{
+		ID: 86,
+		GuildID: 84,
+		Name: "silo-zone",
+		Topic: "Shhhhh",
+		NSFW: true,
 	})
 }

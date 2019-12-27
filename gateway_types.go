@@ -103,7 +103,7 @@ type gwPktDataIdentify struct {
 	LargeThreshold int `json:"large_threshold"`
 	GuildSubscriptions bool `json:"guild_subscriptions"`
 	Shard []int `json:"shard"`
-	Presence gwPktDataUpdateStatus `json:"presence"`
+	Presence *gwPktDataUpdateStatus `json:"presence"`
 }
 
 // OP_UPDATE_STATUS packet data
@@ -129,4 +129,16 @@ type gwEvtDataMessageDelete struct {
 	ID snowflake.ID `json:"id"`
 	ChannelID snowflake.ID `json:"channel_id"`
 	GuildID snowflake.ID `json:"guild_id,omitempty"`
+}
+
+// Presence update eevent packet data
+type gwEvtDataPresenceUpdate struct {
+	User *APITypeUser `json:"user"`
+	Roles []snowflake.ID `json:"roles"`
+	Game interface{} `json:"game"`
+	GuildID snowflake.ID `json:"guild_id"`
+	Status StatusType `json:"status"`
+	Activities []interface{} `json:"activities"`
+	ClientStatus interface{} `json:"client_status"`
+	Nick string `json:"nick,omitempty"`
 }

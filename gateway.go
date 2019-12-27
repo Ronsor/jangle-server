@@ -75,6 +75,7 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 			guilds, err := GetGuildsByUserID(sess.User.ID)
 
 			if err != nil {
+				panic(err)
 				guilds = []*Guild{}
 			}
 
@@ -82,6 +83,9 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 			for _, g := range guilds {
 				ugs = append(ugs, &UnavailableGuild{g.ID, true})
 			}
+
+			err = SetPresenceForUser(sess.User.ID, sess.Identity.Presence)
+			if err != nil { panic(err) }
 
 			codec.Send(ws, &gwPacket{
 				GW_OP_DISPATCH,
@@ -135,6 +139,7 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 		if err != nil {
 			break
 		}
+		RefreshPresenceForUser(sess.User.ID)
 		switch pkt.Op {
 			case GW_OP_HEARTBEAT:
 				wsc.Send(&gwPacket{Op: GW_OP_HEARTBEAT_ACK})

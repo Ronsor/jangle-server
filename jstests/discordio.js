@@ -2536,6 +2536,7 @@ function Server(client, data) {
 		server.roles[role.id] = new Role(role);
 	});
 	data.members.forEach(function(member) {
+		console.log(member)
 		client.users[member.user.id] = new User(member.user);
 		server.members[member.user.id] = new Member(client, server, member);
 	});
