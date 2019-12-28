@@ -9,6 +9,15 @@ import (
 
 const GUILD_EVERYONE_DEFAULT_PERMS = PermSet(104324161)
 
+const (
+	GUILD_MSG_NOTIFY_ALL = 0
+	GUILD_MSG_NOTIFY_ONLY_MENTIONS = 1
+)
+
+const (
+	GUILD_EXPLICIT_FILTER_DISABLED = 0
+)
+
 // Represents a currently unavailable guild
 // Used in GW_EVT_READY
 type UnavailableGuild struct {
@@ -99,17 +108,16 @@ func CreateGuild(u *User, g *Guild) (*Guild, error) {
 	c := DB.Core.C("guilds")
 	err := c.Insert(g)
 	if err != nil { return nil, err }
+	g.CreateChannel(&Channel{
+		Name: "general",
+		Type: CHTYPE_GUILD_TEXT,
+	})
 	err = g.AddMember(u.ID, false)
 	if err != nil {
 		// TODO: remove the guild
 		// use transactions?
 		return nil, err
 	}
-	err = g.CreateChannel(&Channel{
-		Name: "general",
-		Type: CHTYPE_GUILD_TEXT,
-	})
-	if err != nil { return g, err }
 	return g, nil
 }
 
@@ -137,7 +145,7 @@ func (g *Guild) AddMember(UserID snowflake.ID, checkBans bool) error {
 	_ = checkBans // TODO: use this
 	c := DB.Core.C("guilds")
 	if _, ok := g.Members[UserID]; ok {
-		return &APIResponseError{0, "User has already joined guild"}
+		return &APIResponseError{0, "User has already joined the guild"}
 	}
 	gm := &GuildMember{UserID: UserID, JoinedAt: time.Now().Unix()}
 	err := c.UpdateId(g.ID, bson.M{"$set": bson.M{"members." + UserID.String(): gm}})
@@ -160,11 +168,34 @@ func (g *Guild) GetPermissions(u *User) PermSet {
 	if g.OwnerID == u.ID {
 		return PERM_EVERYTHING // PERM_ADMINISTRATOR?
 	}
-	return 0 // TODO: the rest
+	mem, err := g.GetMember(u.ID)
+	if err != nil {
+		return 0
+	}
+	var uRoles = map[snowflake.ID]bool{}
+	for _, v := range mem.Roles {
+		uRoles[v] = true
+	}
+	var perm PermSet
+	for _, v := range g.Roles {
+		if uRoles[v.ID] || v.ID == g.ID { // (v.ID == g.ID) is @everyone. This is a special case.
+			perm |= v.Permissions
+		}
+	}
+	return perm // TODO: the rest
 }
 
 func (g *Guild) Channels() ([]*Channel, error) {
 	return GetChannelsByGuild(g.ID)
+}
+
+func (g *Guild) CreateChannel(ch *Channel) (*Channel, error) {
+	ch.ID = flake.Generate()
+	ch.GuildID = g.ID
+	c := DB.Core.C("channels")
+	err := c.Insert(&ch)
+	if err != nil { return nil, err }
+	return ch, nil
 }
 
 func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID, IncludeMembers bool */) *APITypeGuild {
@@ -252,8 +283,16 @@ func InitGuildStaging() {
 		ID: 84,
 		Name: "A test",
 		OwnerID: 42,
+		Roles: []*Role{
+			&Role{
+				ID: 84,
+				Name: "@everyone",
+				Permissions: GUILD_EVERYONE_DEFAULT_PERMS,
+			},
+		},
 		Members: map[snowflake.ID]*GuildMember{
 			42: &GuildMember{UserID: 42},
+			43: &GuildMember{UserID: 43},
 		},
 	})
 	chans := DB.Core.C("channels")

@@ -101,7 +101,12 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 			})
 			sess.Seq++
 
-			for _, ch := range sess.User.Channels() {
+			chs, err := sess.User.Channels()
+			if err != nil {
+				panic(err)
+			}
+
+			for _, ch := range chs {
 				codec.Send(ws, mkGwPkt(GW_OP_DISPATCH, ch.ToAPI(), sess.Seq, GW_EVT_CHANNEL_CREATE))
 				log.Println(ch.ID.String())
 				SessSub.AddSub(sess.EvtChan, ch.ID.String())

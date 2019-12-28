@@ -66,12 +66,29 @@ func InitRestUser(r *router.Router) {
 	r.GET("/api/v6/users/:uid/channels", MwTokenAuth(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		// Something *should* be done here
-		chs := me.Channels()
+		chs, err := me.Channels()
+		if err != nil {
+			util.WriteJSONStatus(c, 500, &APIResponseError{0, "Unknown error"})
+		}
 		out := make([]*APITypeDMChannel, 0, len(chs))
 		for _, v := range chs {
 			if v.Type == CHTYPE_DM {
 				out = append(out, v.ToAPI().(*APITypeDMChannel))
 			}
+		}
+		util.WriteJSON(c, out)
+	}, "uid"))
+
+	r.GET("/api/v6/users/:uid/guilds", MwTokenAuth(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		guilds, err := me.Guilds()
+		if err != nil {
+			util.WriteJSONStatus(c, 500, &APIResponseError{0, "Unknown error"})
+			return
+		}
+		out := make([]*APITypeGuild, 0, len(guilds))
+		for _, v := range guilds {
+			out = append(out, v.ToAPI())
 		}
 		util.WriteJSON(c, out)
 	}, "uid"))

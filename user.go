@@ -137,19 +137,16 @@ func (u *User) MarkRead(cid, mid snowflake.ID) {
 	u.LastMessageIDs[cid] = mid
 }
 
-// FromAPI merges a safe APITypeUser struct's properties
-func (u *User) FromAPI(in *APITypeUser) *User {
-	// TODO: something
-	_ = in
-	return u
-}
-
 // DMChannels returns the DM channels a user is in
-func (u *User) Channels() []*Channel {
+func (u *User) Channels() ([]*Channel, error) {
 	ch := []*Channel{}
 	err := DB.Core.C("channels").Find(bson.M{"recipient_ids":u.ID}).All(&ch)
-	if err != nil { return []*Channel{} }
-	return ch
+	if err != nil { return nil, err }
+	return ch, nil
+}
+
+func (u *User) Guilds() ([]*Guild, error) {
+	return GetGuildsByUserID(u.ID)
 }
 
 /*

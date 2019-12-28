@@ -12,6 +12,7 @@ import (
 const (
 	APIERR_UNKNOWN_USER = 10013
 	APIERR_UNKNOWN_CHANNEL = 10003
+	APIERR_UNKNOWN_GUILD = 10004
 	APIERR_UNKNOWN_MEMBER = 10007
 	APIERR_UNKNOWN_MESSAGE = 10008
 	APIERR_UNAUTHORIZED = 40001
@@ -168,7 +169,7 @@ type APITypeGuild struct {
 	Icon string `json:"icon,omitempty"`
 	Splash string `json:"splash,omitempty"`
 
-	Owner bool `json:"bool,omitempty"`
+	Owner bool `json:"owner,omitempty"`
 	OwnerID snowflake.ID `json:"owner_id,string"`
 
 	Permissions PermSet `json:"permissions"`

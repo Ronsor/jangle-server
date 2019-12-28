@@ -21,6 +21,19 @@ func msDecodeBSON(in, out interface{}) error {
 }
 
 func InitSessionManager() {
+	go RunSessionManager("guilds", func (dm bson.M, evt bson.M) error {
+		log.Println(evt)
+		id := fmt.Sprintf("%v", evt["documentKey"].(bson.M)["_id"])
+		snow, err := snowflake.ParseString(id)
+		_ = snow
+		if err != nil { return err }
+		switch evt["operationType"].(string) {
+			case "update":
+				uf := evt["updateDescription"].(bson.M)["updatedFields"].(bson.M)
+				log.Println("Jnk", uf)
+		}
+		return nil
+	})
 	go RunSessionManager("msgs", func (dm bson.M, evt bson.M) error {
 		log.Println(evt)
 		id := fmt.Sprintf("%v", evt["documentKey"].(bson.M)["_id"])
