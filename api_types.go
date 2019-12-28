@@ -198,9 +198,9 @@ type APITypeGuild struct {
 	Unavailable bool `json:"unavailable,omitempty"`
 
 	MemberCount int `json:"member_count,omitempty"`
-	Members []*APITypeGuildMember `json:"members"`
-	Channels []APITypeAnyChannel `json:"channels"`
-	Presences []*APITypePresenceUpdate `json:"presences"`
+	Members []*APITypeGuildMember `json:"members,omitempty"`
+	Channels []APITypeAnyChannel `json:"channels,omitempty"`
+	Presences []*APITypePresenceUpdate `json:"presences,omitempty"`
 	MaxPresences int `json:"max_presences,omitempty"` // Should be ~5k (maybe 10k)?
 	VoiceStates []interface{} `json:"voice_states"`
 
