@@ -164,6 +164,14 @@ func (g *Guild) GetMember(UserID snowflake.ID) (*GuildMember, error) {
 	return m, nil
 }
 
+func (g *Guild) DelMember(UserID snowflake.ID) error {
+	c := DB.Core.C("guilds")
+	err := c.UpdateId(g.ID, bson.M{"$unset": bson.M{"members." + UserID.String(): ""}})
+	if err != nil { return err }
+	delete(g.Members, UserID)
+	return nil
+}
+
 func (g *Guild) GetPermissions(u *User) PermSet {
 	if g.OwnerID == u.ID {
 		return PERM_EVERYTHING // PERM_ADMINISTRATOR?
