@@ -87,7 +87,6 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 			if sess.Identity.Presence.Status == STATUS_UNKNOWN {
 				sess.Identity.Presence.Status = STATUS_ONLINE
 			}
-			log.Println(sess.Identity.Presence)
 			err = SetPresenceForUser(sess.User.ID, sess.Identity.Presence)
 			if err != nil { panic(err) }
 
