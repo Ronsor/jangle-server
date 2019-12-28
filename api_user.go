@@ -88,7 +88,7 @@ func InitRestUser(r *router.Router) {
 		}
 		out := make([]*APITypeGuild, 0, len(guilds))
 		for _, v := range guilds {
-			out = append(out, v.ToAPI())
+			out = append(out, v.ToAPI(me.ID, false))
 		}
 		util.WriteJSON(c, out)
 	}, "uid"))

@@ -206,14 +206,14 @@ func (g *Guild) CreateChannel(ch *Channel) (*Channel, error) {
 	return ch, nil
 }
 
-func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID, IncludeMembers bool */) *APITypeGuild {
+func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID, forCreateEvent bool */) *APITypeGuild {
 	var oUid snowflake.ID
-	var includeMembers = true
+	var forCreateEvent = true
 	if len(options) > 0 {
 		oUid = options[0].(snowflake.ID)
 	}
 	if len(options) > 1 {
-		includeMembers = options[1].(bool)
+		forCreateEvent = options[1].(bool)
 	}
 	out := &APITypeGuild{
 		ID: g.ID,
@@ -244,7 +244,7 @@ func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID, IncludeMemb
 
 	out.Members = []*APITypeGuildMember{}
 	out.Presences = []*APITypePresenceUpdate{}
-	if includeMembers {
+	if forCreateEvent {
 		for _, v := range g.Members {
 			mem := v.ToAPI()
 			out.Members = append(out.Members, mem)
@@ -260,16 +260,16 @@ func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID, IncludeMemb
 				})
 			}
 		}
-	}
 
-	out.Channels = []APITypeAnyChannel{}
-	gchs, err := g.Channels()
-	if err != nil {
-		// ????
-		panic("Unexpected error: can't access list of guild channels!")
-	}
-	for _, v := range gchs {
-		out.Channels = append(out.Channels, v.ToAPI())
+		out.Channels = []APITypeAnyChannel{}
+		gchs, err := g.Channels()
+		if err != nil {
+			// ????
+			panic("Unexpected error: can't access list of guild channels!")
+		}
+		for _, v := range gchs {
+			out.Channels = append(out.Channels, v.ToAPI())
+		}
 	}
 
 	out.Emojis = []*APITypeEmoji{}

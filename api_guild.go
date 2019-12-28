@@ -26,7 +26,7 @@ func InitRestGuild(r *router.Router) {
 			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_GUILD, "The guild specified does not exist"})
 			return
 		}
-		util.WriteJSON(c, g.ToAPI(me.ID))
+		util.WriteJSON(c, g.ToAPI(me.ID, false))
 	}))
 
 	r.GET("/api/v6/guilds/:gid/channels", MwTokenAuth(func(c *fasthttp.RequestCtx) {
@@ -95,7 +95,11 @@ func InitRestGuild(r *router.Router) {
 			return
 		}
 
-		if ch.Type == 0 { ch.Type = CHTYPE_GUILD_TEXT }
+		if ch.Type == 0 { ch.Type = CHTYPE_GUILD_TEXT } else
+		if ch.Type != CHTYPE_GUILD_TEXT && ch.Type != CHTYPE_GUILD_CATEGORY {
+			util.WriteJSONStatus(c, 400, &APIResponseError{0, "Unsupported channel type"})
+			return
+		}
 		if ch.ParentID != 0 {
 			pch, err := GetChannelByID(ch.ParentID)
 			if err != nil {
