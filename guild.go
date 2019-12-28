@@ -249,7 +249,7 @@ func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID, IncludeMemb
 			mem := v.ToAPI()
 			out.Members = append(out.Members, mem)
 			psn, err := GetPresenceForUser(v.UserID)
-			if err != nil {
+			if err == nil {
 				out.Presences = append(out.Presences, &APITypePresenceUpdate{
 					User: mem.User,
 					Roles: mem.Roles,

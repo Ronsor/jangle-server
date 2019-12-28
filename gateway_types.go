@@ -27,6 +27,8 @@ const (
 const (
 	GW_EVT_READY = "READY"
 	GW_EVT_CHANNEL_CREATE = "CHANNEL_CREATE"
+	GW_EVT_CHANNEL_UPDATE = "CHANNEL_UPDATE"
+	GW_EVT_CHANNEL_DELETE = "CHANNEL_DELETE"
 
 	GW_EVT_MESSAGE_CREATE = "MESSAGE_CREATE"
 	GW_EVT_MESSAGE_UPDATE = "MESSAGE_UPDATE"
@@ -35,6 +37,8 @@ const (
 	GW_EVT_MESSAGE_REACTION_ADD = "MESSAGE_REACTION_ADD"
 
 	GW_EVT_GUILD_CREATE = "GUILD_CREATE"
+	GW_EVT_GUILD_UPDATE = "GUILD_UPDATE"
+	GW_EVT_GUILD_DELETE = "GUILD_DELETE"
 )
 
 // OP_UPDATE_STATUS types
@@ -131,7 +135,7 @@ type gwEvtDataMessageDelete struct {
 	GuildID snowflake.ID `json:"guild_id,omitempty"`
 }
 
-// Presence update eevent packet data
+// Presence update event packet data
 type gwEvtDataPresenceUpdate struct {
 	User *APITypeUser `json:"user"`
 	Roles []snowflake.ID `json:"roles"`

@@ -75,7 +75,6 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 			guilds, err := GetGuildsByUserID(sess.User.ID)
 
 			if err != nil {
-				panic(err)
 				guilds = []*Guild{}
 			}
 
@@ -103,12 +102,11 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 
 			chs, err := sess.User.Channels()
 			if err != nil {
-				panic(err)
+				chs = []*Channel{}
 			}
 
 			for _, ch := range chs {
 				codec.Send(ws, mkGwPkt(GW_OP_DISPATCH, ch.ToAPI(), sess.Seq, GW_EVT_CHANNEL_CREATE))
-				log.Println(ch.ID.String())
 				SessSub.AddSub(sess.EvtChan, ch.ID.String())
 				sess.Seq++
 			}
@@ -137,10 +135,22 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 	go func() {
 		for r := range sess.EvtChan {
 			if sess.Wsc.Closed {
-				log.Println("Terminating session.")
 				break
 			}
 			pkt := r.(gwPacket)
+			if pkt.Op == GW_OP_DISPATCH {
+				switch pkt.Type {
+					case GW_EVT_CHANNEL_CREATE:
+						ch := pkt.PvtData.(*Channel)
+						if ch.GetPermissions(sess.User).Has(PERM_VIEW_CHANNEL) {
+							SessSub.AddSub(sess.EvtChan, ch.ID.String())
+						}
+					case GW_EVT_CHANNEL_DELETE:
+						go SessSub.Unsub(sess.EvtChan, pkt.PvtData.(*Channel).ID.String())
+					case GW_EVT_GUILD_CREATE:
+						SessSub.AddSub(sess.EvtChan, pkt.PvtData.(*Guild).ID.String())
+				}
+			}
 			pkt.Seq = sess.Seq
 			wsc.Send(&pkt)
 			sess.Seq++

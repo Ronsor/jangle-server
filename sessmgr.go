@@ -28,6 +28,16 @@ func InitSessionManager() {
 		_ = snow
 		if err != nil { return err }
 		switch evt["operationType"].(string) {
+			case "insert":
+				var g Guild
+				err := msDecodeBSON(dm, &g)
+				if err != nil { return err }
+				SessSub.TryPub(gwPacket{
+					Op: GW_OP_DISPATCH,
+					Type: GW_EVT_GUILD_CREATE,
+					Data: g.ToAPI(g.OwnerID),
+					PvtData: &g,
+				}, g.OwnerID.String())
 			case "update":
 				uf := evt["updateDescription"].(bson.M)["updatedFields"].(bson.M)
 				log.Println("Jnk", uf)
@@ -35,7 +45,7 @@ func InitSessionManager() {
 		return nil
 	})
 	go RunSessionManager("channels", func (dm bson.M, evt bson.M) error {
-		log.Printon(evt)
+		log.Println(evt)
 		id := fmt.Sprintf("%v", evt["documentKey"].(bson.M)["_id"])
 		snow, err := snowflake.ParseString(id)
 		_ = snow
@@ -46,7 +56,20 @@ func InitSessionManager() {
 				err := msDecodeBSON(dm, &c)
 				if err != nil { return err }
 				if c.IsGuild() {
-					
+					SessSub.TryPub(gwPacket{
+						Op: GW_OP_DISPATCH,
+						Type: GW_EVT_CHANNEL_CREATE,
+						Data: c.ToAPI(),
+						PvtData: &c,
+					}, c.GuildID.String())
+				} else if c.Type == CHTYPE_DM {
+					ids := c.RecipientIDs
+					SessSub.TryPub(gwPacket{
+						Op: GW_OP_DISPATCH,
+						Type: GW_EVT_CHANNEL_CREATE,
+						Data: c.ToAPI(),
+						PvtData: &c,
+					}, ids[0].String(), ids[1].String())
 				}
 		}
 		return nil

@@ -233,10 +233,10 @@ func (c *Channel) Save() error {
 }
 
 func InitChannelStaging() {
-	c := DB.Core.C("channels")
-	c.Insert(&Channel{
+//	c := DB.Core.C("channels")
+/*	c.Insert(&Channel{
 		ID: 1,
 		Type: CHTYPE_DM,
 		RecipientIDs: []snowflake.ID{42,43},
-	})
+	})*/
 }
