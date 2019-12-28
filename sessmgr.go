@@ -34,6 +34,23 @@ func InitSessionManager() {
 		}
 		return nil
 	})
+	go RunSessionManager("channels", func (dm bson.M, evt bson.M) error {
+		log.Printon(evt)
+		id := fmt.Sprintf("%v", evt["documentKey"].(bson.M)["_id"])
+		snow, err := snowflake.ParseString(id)
+		_ = snow
+		if err != nil { return err }
+		switch evt["operationType"].(string) {
+			case "insert":
+				var c Channel
+				err := msDecodeBSON(dm, &c)
+				if err != nil { return err }
+				if c.IsGuild() {
+					
+				}
+		}
+		return nil
+	})
 	go RunSessionManager("msgs", func (dm bson.M, evt bson.M) error {
 		log.Println(evt)
 		id := fmt.Sprintf("%v", evt["documentKey"].(bson.M)["_id"])

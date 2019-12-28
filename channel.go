@@ -132,6 +132,10 @@ func (c *Channel) Messages(around, before, after snowflake.ID, limit int, extra 
 	return out, nil
 }
 
+func (c *Channel) IsGuild() bool {
+	return c.Type == CHTYPE_GUILD_TEXT // TODO: the other types
+}
+
 func (c *Channel) ToAPI() APITypeAnyChannel {
 	if c.Type == CHTYPE_DM {
 		rcp := []*APITypeUser{}
@@ -171,7 +175,7 @@ func (c *Channel) ToAPI() APITypeAnyChannel {
 }
 
 func (c *Channel) Guild() (*Guild, error) {
-	if c.Type != CHTYPE_GUILD_TEXT {
+	if !c.IsGuild() {
 		return nil, fmt.Errorf("This is not a guild channel")
 	}
 	return GetGuildByID(c.GuildID)

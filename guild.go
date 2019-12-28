@@ -147,7 +147,7 @@ func (g *Guild) AddMember(UserID snowflake.ID, checkBans bool) error {
 	if _, ok := g.Members[UserID]; ok {
 		return &APIResponseError{0, "User has already joined the guild"}
 	}
-	gm := &GuildMember{UserID: UserID, JoinedAt: time.Now().Unix()}
+	gm := &GuildMember{UserID: UserID, JoinedAt: time.Now().Unix(), Roles: []snowflake.ID{g.ID}}
 	err := c.UpdateId(g.ID, bson.M{"$set": bson.M{"members." + UserID.String(): gm}})
 	if err != nil {
 		return err
@@ -299,8 +299,8 @@ func InitGuildStaging() {
 			},
 		},
 		Members: map[snowflake.ID]*GuildMember{
-			42: &GuildMember{UserID: 42},
-			43: &GuildMember{UserID: 43},
+			42: &GuildMember{UserID: 42, Roles: []snowflake.ID{84}},
+			43: &GuildMember{UserID: 43, Roles: []snowflake.ID{84}},
 		},
 	})
 	chans := DB.Core.C("channels")
