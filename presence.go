@@ -8,9 +8,9 @@ import (
 )
 
 type PresenceInternal struct {
-	ID snowflake.ID `bson:"_id"`
-	Timestamp time.Time `bson:"timestamp"`
-	Presence *gwPktDataUpdateStatus `bson:"presence"`
+	ID        snowflake.ID           `bson:"_id"`
+	Timestamp time.Time              `bson:"timestamp"`
+	Presence  *gwPktDataUpdateStatus `bson:"presence"`
 }
 
 // I dare say it's awful to repurpose a gateway packet data type for this...

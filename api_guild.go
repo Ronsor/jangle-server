@@ -5,9 +5,9 @@ import (
 
 	"jangled/util"
 
-	"github.com/valyala/fasthttp"
-	"github.com/fasthttp/router"
 	"github.com/bwmarrin/snowflake"
+	"github.com/fasthttp/router"
+	"github.com/valyala/fasthttp"
 )
 
 func InitRestGuild(r *router.Router) {
@@ -46,23 +46,23 @@ func InitRestGuild(r *router.Router) {
 	}))
 
 	type APIReqPostGuildsGidChannels struct {
-		Name string `json:"name"`
-		Type int `json:"type"`
-		Topic string `json:"topic"`
-		Position int `json:"position"`
+		Name                 string                        `json:"name"`
+		Type                 int                           `json:"type"`
+		Topic                string                        `json:"topic"`
+		Position             int                           `json:"position"`
 		PermissionOverwrites []*APITypePermissionOverwrite `json:"permission_overwrites"`
-		ParentID snowflake.ID `json:"parent_id"`
-		NSFW bool `json:"nsfw"`
+		ParentID             snowflake.ID                  `json:"parent_id"`
+		NSFW                 bool                          `json:"nsfw"`
 	}
 
 	r.POST("/api/v6/guilds/:gid/channels", MwTokenAuth(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 
 		var req APIReqPostGuildsGidChannels
-                if util.ReadPostJSON(c, &req) != nil {
-                        util.WriteJSONStatus(c, 400, &APIResponseError{0, "Malformed request body"})
-                        return
-                }
+		if util.ReadPostJSON(c, &req) != nil {
+			util.WriteJSONStatus(c, 400, &APIResponseError{0, "Malformed request body"})
+			return
+		}
 
 		gid := c.UserValue("gid").(string)
 		snow, err := snowflake.ParseString(gid)
@@ -82,10 +82,10 @@ func InitRestGuild(r *router.Router) {
 		}
 
 		ch := &Channel{
-			Name: req.Name,
-			Topic: req.Topic,
-			NSFW: req.NSFW,
-			Type: req.Type,
+			Name:     req.Name,
+			Topic:    req.Topic,
+			NSFW:     req.NSFW,
+			Type:     req.Type,
 			Position: req.Position,
 			ParentID: req.ParentID,
 		}
@@ -95,8 +95,9 @@ func InitRestGuild(r *router.Router) {
 			return
 		}
 
-		if ch.Type == 0 { ch.Type = CHTYPE_GUILD_TEXT } else
-		if ch.Type != CHTYPE_GUILD_TEXT && ch.Type != CHTYPE_GUILD_CATEGORY {
+		if ch.Type == 0 {
+			ch.Type = CHTYPE_GUILD_TEXT
+		} else if ch.Type != CHTYPE_GUILD_TEXT && ch.Type != CHTYPE_GUILD_CATEGORY {
 			util.WriteJSONStatus(c, 400, &APIResponseError{0, "Unsupported channel type"})
 			return
 		}
@@ -124,4 +125,5 @@ func InitRestGuild(r *router.Router) {
 
 		util.WriteJSON(c, ch.ToAPI())
 	}))
+
 }

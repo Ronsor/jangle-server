@@ -10,7 +10,7 @@ import (
 var dbSess *mgo.Session
 var DB = struct {
 	Core, Msg, Files *mgo.Database
-} {}
+}{}
 
 func InitDB() {
 	sess, err := mgo.Dial(*flgMongoDB)
@@ -25,12 +25,12 @@ func InitDB() {
 
 	// Add collections and indexes
 	//DB.Core.C("users").EnsureIndex(mgo.Index{Name:"idx_guilds", Key: []string{"guildids"}})
-	DB.Core.C("users").EnsureIndex(mgo.Index{Name:"idx_tags", Key: []string{"username", "discriminator"}})
-	DB.Core.C("presence").EnsureIndex(mgo.Index{Name:"idx_presence_ttl", Key: []string{"timestamp"}, Unique: false, Background: true, ExpireAfter: 60 * time.Second})
+	DB.Core.C("users").EnsureIndex(mgo.Index{Name: "idx_tags", Key: []string{"username", "discriminator"}})
+	DB.Core.C("presence").EnsureIndex(mgo.Index{Name: "idx_presence_ttl", Key: []string{"timestamp"}, Unique: false, Background: true, ExpireAfter: 60 * time.Second})
 
-	DB.Core.C("channels").EnsureIndex(mgo.Index{Name:"idx_recipients", Key: []string{"recipients"}})
+	DB.Core.C("channels").EnsureIndex(mgo.Index{Name: "idx_recipients", Key: []string{"recipients"}})
 
-	DB.Msg.C("msgs").EnsureIndex(mgo.Index{Name:"idx_pinned", Key: []string{"channel_id", "pinned"}})
+	DB.Msg.C("msgs").EnsureIndex(mgo.Index{Name: "idx_pinned", Key: []string{"channel_id", "pinned"}})
 
 	if *flgStaging {
 		InitUserStaging()

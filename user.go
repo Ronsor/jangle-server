@@ -6,15 +6,15 @@ import (
 	"jangled/util"
 
 	"github.com/bwmarrin/snowflake"
-	"github.com/valyala/fasthttp"
 	"github.com/globalsign/mgo/bson"
+	"github.com/valyala/fasthttp"
 )
 
 // User flags
 const (
-	USER_FLAG_NONE = 0
-	USER_FLAG_STAFF = 1 << 0
-	USER_FLAG_PARTNER = 1 << 1
+	USER_FLAG_NONE         = 0
+	USER_FLAG_STAFF        = 1 << 0
+	USER_FLAG_PARTNER      = 1 << 1
 	USER_FLAG_EARLYADOPTER = 1 << 24
 	// The rest are unused
 )
@@ -29,35 +29,35 @@ const (
 // UserSettings is a Discord-compatible structure containing a user's settings
 // This struct is safe to be returned by an API call
 type UserSettings struct {
-	Locale string `bson:"locale"`
-	AfkTimeout int `bson:"afk_timeout"`
+	Locale     string `bson:"locale"`
+	AfkTimeout int    `bson:"afk_timeout"`
 	// TODO: the rest
 }
 
 // User is a Discord-compatible structure containing information on a user
 // This struct is not safe to be returned by an API call
 type User struct {
-	ID snowflake.ID `bson:"_id"`
-	Username string `bson:"username"`
-	Discriminator string `bson:"discriminator"`
-	Email string `bson:"email,omitempty"`
+	ID            snowflake.ID `bson:"_id"`
+	Username      string       `bson:"username"`
+	Discriminator string       `bson:"discriminator"`
+	Email         string       `bson:"email,omitempty"`
 
-	Bot bool `bson:"bot"`
-	Avatar string `bson:"avatar"`
-	MfaEnabled bool `bson:"mfa_enabled"`
-	Verified bool `bson:"verified"`
+	Bot        bool   `bson:"bot"`
+	Avatar     string `bson:"avatar"`
+	MfaEnabled bool   `bson:"mfa_enabled"`
+	Verified   bool   `bson:"verified"`
 
-	Flags int `bson:"flags"`
-	PremiumType int `bson:"premium_type"`
-	PremiumSince int `bson:"premium_since"`
-	Phone string `bson:"phone"`
+	Flags        int    `bson:"flags"`
+	PremiumType  int    `bson:"premium_type"`
+	PremiumSince int    `bson:"premium_since"`
+	Phone        string `bson:"phone"`
 
 	LastSession int `bson:"last_session"`
 
-	PasswordHash string `bson:"password_hash"`
-	Settings *UserSettings `bson:"user_settings"`
+	PasswordHash string        `bson:"password_hash"`
+	Settings     *UserSettings `bson:"user_settings"`
 
-	Presence *gwPktDataUpdateStatus `bson:"presence"`
+	Presence       *gwPktDataUpdateStatus        `bson:"presence"`
 	LastMessageIDs map[snowflake.ID]snowflake.ID `bson:"read_last_message_ids"`
 }
 
@@ -76,8 +76,12 @@ func GetUserByToken(token string) (*User, error) {
 	if *flgStaging {
 		var i snowflake.ID
 		n, err := fmt.Sscanf(token, "%d", &i)
-		if n != 1 { return nil, fmt.Errorf("Bad ID") }
-		if err != nil { return nil, err }
+		if n != 1 {
+			return nil, fmt.Errorf("Bad ID")
+		}
+		if err != nil {
+			return nil, err
+		}
 		return GetUserByID(i)
 	}
 	return nil, fmt.Errorf("Not implemented") // TODO: implement actual auth
@@ -87,10 +91,14 @@ func GetUserByToken(token string) (*User, error) {
 // Specifically, it attempts to authorize the request using a token.
 func GetUserByHttpRequest(c *fasthttp.RequestCtx, ctxvar string) (*User, error) {
 	b := c.Request.Header.Peek("Authorization")
-	if b == nil { return nil, fmt.Errorf("No authorization token supplied") }
+	if b == nil {
+		return nil, fmt.Errorf("No authorization token supplied")
+	}
 	a := string(b)
 	user, err := GetUserByToken(a)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	if ctxvar != "" {
 		uid2 := c.UserValue(ctxvar).(string) // You're going to pass a string, or I'll panic()
 		if uid2 == "" || uid2 == "@me" {
@@ -104,14 +112,14 @@ func GetUserByHttpRequest(c *fasthttp.RequestCtx, ctxvar string) (*User, error) 
 // ToAPI returns a version of the User struct that can be returned by API calls
 func (u *User) ToAPI(safe bool) *APITypeUser {
 	u2 := &APITypeUser{
-		ID: u.ID,
-		Username: u.Username,
+		ID:            u.ID,
+		Username:      u.Username,
 		Discriminator: u.Discriminator,
-		AvatarHash: u.Avatar,
-		Bot: u.Bot,
-		MfaEnabled: true,
-		Flags: u.Flags,
-		PremiumType: u.PremiumType,
+		AvatarHash:    u.Avatar,
+		Bot:           u.Bot,
+		MfaEnabled:    true,
+		Flags:         u.Flags,
+		PremiumType:   u.PremiumType,
 	}
 	if u.Settings != nil {
 		u2.Locale = u.Settings.Locale
@@ -140,8 +148,10 @@ func (u *User) MarkRead(cid, mid snowflake.ID) {
 // DMChannels returns the DM channels a user is in
 func (u *User) Channels() ([]*Channel, error) {
 	ch := []*Channel{}
-	err := DB.Core.C("channels").Find(bson.M{"recipient_ids":u.ID}).All(&ch)
-	if err != nil { return nil, err }
+	err := DB.Core.C("channels").Find(bson.M{"recipient_ids": u.ID}).All(&ch)
+	if err != nil {
+		return nil, err
+	}
 	return ch, nil
 }
 
@@ -158,23 +168,23 @@ func (u *User) Guilds() ([]*Guild, error) {
 func InitUserStaging() {
 	c := DB.Core.C("users")
 	c.Insert(&User{
-		ID: 42,
-		Username: "test1",
+		ID:            42,
+		Username:      "test1",
 		Discriminator: "1234",
-		Email: "test@localhost",
-		PasswordHash: util.CryptPass("hello"),
-		Flags: USER_FLAG_STAFF | USER_FLAG_EARLYADOPTER,
+		Email:         "test@localhost",
+		PasswordHash:  util.CryptPass("hello"),
+		Flags:         USER_FLAG_STAFF | USER_FLAG_EARLYADOPTER,
 		Settings: &UserSettings{
 			Locale: "en-US",
 		},
 	})
 	c.Insert(&User{
-		ID: 43,
-		Username: "hello",
+		ID:            43,
+		Username:      "hello",
 		Discriminator: "4242",
-		Email: "test2@localhost",
-		PasswordHash: util.CryptPass("hello"),
-		Flags: USER_FLAG_EARLYADOPTER,
+		Email:         "test2@localhost",
+		PasswordHash:  util.CryptPass("hello"),
+		Flags:         USER_FLAG_EARLYADOPTER,
 		Settings: &UserSettings{
 			Locale: "en-US",
 		},

@@ -10,7 +10,7 @@ import (
 const GUILD_EVERYONE_DEFAULT_PERMS = PermSet(104324161)
 
 const (
-	GUILD_MSG_NOTIFY_ALL = 0
+	GUILD_MSG_NOTIFY_ALL           = 0
 	GUILD_MSG_NOTIFY_ONLY_MENTIONS = 1
 )
 
@@ -21,36 +21,38 @@ const (
 // Represents a currently unavailable guild
 // Used in GW_EVT_READY
 type UnavailableGuild struct {
-	ID snowflake.ID `json:"id"`
-	Unavailable bool `json:"unavailable"`
+	ID          snowflake.ID `json:"id"`
+	Unavailable bool         `json:"unavailable"`
 }
 
 type GuildMember struct {
-	UserID snowflake.ID `bson:"user"`
-	Nick string `bson:"nick"`
-	Roles []snowflake.ID `bson:"roles"`
-	JoinedAt int64 `bson:"joined_at"`
-	PremiumSince int64 `bson:"premium_since"`
-	Deaf bool `bson:"deaf"`
-	Mute bool `bson:"mute"`
+	UserID       snowflake.ID   `bson:"user"`
+	Nick         string         `bson:"nick"`
+	Roles        []snowflake.ID `bson:"roles"`
+	JoinedAt     int64          `bson:"joined_at"`
+	PremiumSince int64          `bson:"premium_since"`
+	Deaf         bool           `bson:"deaf"`
+	Mute         bool           `bson:"mute"`
 }
 
 func (gm *GuildMember) ToAPI() *APITypeGuildMember {
 	u, _ := GetUserByID(gm.UserID)
 	roles := gm.Roles
-	if roles == nil { roles = []snowflake.ID{} }
+	if roles == nil {
+		roles = []snowflake.ID{}
+	}
 	return &APITypeGuildMember{u.ToAPI(true), gm.Nick, roles, time.Unix(gm.JoinedAt, 0), gm.Deaf, gm.Mute}
 }
 
 type Role struct {
-	ID snowflake.ID `bson:"id"`
-	Name string `bson:"name"`
-	Color int `bson:"color"`
-	Hoist bool `bson:"hoist"`
-	Position int `bson:"position"`
-	Permissions PermSet `bson:"permission"`
-	Managed bool `bson:"managed"`
-	Mentionable bool `bson:"mentionable"`
+	ID          snowflake.ID `bson:"id"`
+	Name        string       `bson:"name"`
+	Color       int          `bson:"color"`
+	Hoist       bool         `bson:"hoist"`
+	Position    int          `bson:"position"`
+	Permissions PermSet      `bson:"permission"`
+	Managed     bool         `bson:"managed"`
+	Mentionable bool         `bson:"mentionable"`
 }
 
 func (r *Role) ToAPI() *APITypeRole {
@@ -59,40 +61,39 @@ func (r *Role) ToAPI() *APITypeRole {
 }
 
 type Guild struct {
-	ID snowflake.ID `bson:"_id"`
-	Name string `bson:"name"`
-	Icon string `bson:"icon"`
-	Splash string `bson:"splash"`
+	ID     snowflake.ID `bson:"_id"`
+	Name   string       `bson:"name"`
+	Icon   string       `bson:"icon"`
+	Splash string       `bson:"splash"`
 
 	OwnerID snowflake.ID `bson:"owner_id"`
-	Region string `bson:"region"`
+	Region  string       `bson:"region"`
 	/* AFK Channels are deprecated and will never be supported */
 
-	EmbedEnabled bool `bson:"embed_enabled"`
+	EmbedEnabled   bool         `bson:"embed_enabled"`
 	EmbedChannelID snowflake.ID `bson:"embed_channel_id"`
 
-	VerificationLevel int `bson:"verification_level"`
+	VerificationLevel           int `bson:"verification_level"`
 	DefaultMessageNotifications int `bson:"default_message_notifications"`
-	ExplicitContentFilter int `bson:"explicit_content_filter"`
+	ExplicitContentFilter       int `bson:"explicit_content_filter"`
 
-	Roles []*Role `bson:"roles"`
-	Emojis []*Emoji `bson:"emojis"`
-	Members map[snowflake.ID]*GuildMember `bson:"members"`
-	Features []string `bson:"features"`
-	MfaLevel int `bson:"mfa_level"`
-	ApplicationID snowflake.ID `bson:"application_id"`
+	Roles         []*Role                       `bson:"roles"`
+	Emojis        []*Emoji                      `bson:"emojis"`
+	Members       map[snowflake.ID]*GuildMember `bson:"members"`
+	Features      []string                      `bson:"features"`
+	MfaLevel      int                           `bson:"mfa_level"`
+	ApplicationID snowflake.ID                  `bson:"application_id"`
 
-	WidgetEnabled bool `bson:"widget_enabled"`
+	WidgetEnabled   bool         `bson:"widget_enabled"`
 	WidgetChannelID snowflake.ID `bson:"widget_channel_id"`
 	SystemChannelID snowflake.ID `bson:"system_channel_id"`
 
 	Large bool `bson:"large"`
 
-	Description string `bson:"description"`
-	Banner string `bson:"banner"`
-	PremiumTier int `bson:"premium_tier"`
+	Description     string `bson:"description"`
+	Banner          string `bson:"banner"`
+	PremiumTier     int    `bson:"premium_tier"`
 	PreferredLocale string `bson:"preferred_locale"`
-
 }
 
 func CreateGuild(u *User, g *Guild) (*Guild, error) {
@@ -100,14 +101,16 @@ func CreateGuild(u *User, g *Guild) (*Guild, error) {
 	g.OwnerID = u.ID
 	g.Roles = []*Role{
 		&Role{
-			ID: g.ID,
-			Name: "@everyone",
+			ID:          g.ID,
+			Name:        "@everyone",
 			Permissions: GUILD_EVERYONE_DEFAULT_PERMS,
 		},
 	}
 	c := DB.Core.C("guilds")
 	err := c.Insert(g)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	g.CreateChannel(&Channel{
 		Name: "general",
 		Type: CHTYPE_GUILD_TEXT,
@@ -134,7 +137,7 @@ func GetGuildByID(ID snowflake.ID) (*Guild, error) {
 func GetGuildsByUserID(UserID snowflake.ID) ([]*Guild, error) {
 	var g2 []*Guild
 	c := DB.Core.C("guilds")
-	err := c.Find(bson.M{"members." + UserID.String(): bson.M{"$exists":true}}).All(&g2)
+	err := c.Find(bson.M{"members." + UserID.String(): bson.M{"$exists": true}}).All(&g2)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +170,9 @@ func (g *Guild) GetMember(UserID snowflake.ID) (*GuildMember, error) {
 func (g *Guild) DelMember(UserID snowflake.ID) error {
 	c := DB.Core.C("guilds")
 	err := c.UpdateId(g.ID, bson.M{"$unset": bson.M{"members." + UserID.String(): ""}})
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	delete(g.Members, UserID)
 	return nil
 }
@@ -202,7 +207,9 @@ func (g *Guild) CreateChannel(ch *Channel) (*Channel, error) {
 	ch.GuildID = g.ID
 	c := DB.Core.C("channels")
 	err := c.Insert(&ch)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	return ch, nil
 }
 
@@ -216,27 +223,27 @@ func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID, forCreateEv
 		forCreateEvent = options[1].(bool)
 	}
 	out := &APITypeGuild{
-		ID: g.ID,
-		Name: g.Name,
-		Icon: g.Icon,
-		Splash: g.Splash,
-		Owner: oUid == g.OwnerID,
-		OwnerID: g.OwnerID,
-		Permissions: 0, // TODO
-		Region: g.Region,
+		ID:                          g.ID,
+		Name:                        g.Name,
+		Icon:                        g.Icon,
+		Splash:                      g.Splash,
+		Owner:                       oUid == g.OwnerID,
+		OwnerID:                     g.OwnerID,
+		Permissions:                 0, // TODO
+		Region:                      g.Region,
 		DefaultMessageNotifications: g.DefaultMessageNotifications,
-		ExplicitContentFilter: g.ExplicitContentFilter,
-		Features: g.Features,
-		MfaLevel: g.MfaLevel,
-		ApplicationID: g.ApplicationID,
-		SystemChannelID: g.SystemChannelID,
-		Description: g.Description,
-		Banner: g.Banner,
-		PremiumTier: g.PremiumTier,
-		PreferredLocale: g.PreferredLocale,
-		MemberCount: len(g.Members),
-		MaxPresences: 5000,
-		VoiceStates: []interface{}{},
+		ExplicitContentFilter:       g.ExplicitContentFilter,
+		Features:                    g.Features,
+		MfaLevel:                    g.MfaLevel,
+		ApplicationID:               g.ApplicationID,
+		SystemChannelID:             g.SystemChannelID,
+		Description:                 g.Description,
+		Banner:                      g.Banner,
+		PremiumTier:                 g.PremiumTier,
+		PreferredLocale:             g.PreferredLocale,
+		MemberCount:                 len(g.Members),
+		MaxPresences:                5000,
+		VoiceStates:                 []interface{}{},
 	}
 	if oUid != 0 {
 		out.JoinedAt = time.Unix(g.Members[oUid].JoinedAt, 0)
@@ -251,12 +258,12 @@ func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID, forCreateEv
 			psn, err := GetPresenceForUser(v.UserID)
 			if err == nil {
 				out.Presences = append(out.Presences, &APITypePresenceUpdate{
-					User: mem.User,
-					Roles: mem.Roles,
+					User:    mem.User,
+					Roles:   mem.Roles,
 					GuildID: g.ID,
-					Status: psn.Status,
-					Game: nil,
-					Nick: mem.Nick,
+					Status:  psn.Status,
+					Game:    nil,
+					Nick:    mem.Nick,
 				})
 			}
 		}
@@ -288,13 +295,13 @@ func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID, forCreateEv
 func InitGuildStaging() {
 	guilds := DB.Core.C("guilds")
 	guilds.Insert(&Guild{
-		ID: 84,
-		Name: "A test",
+		ID:      84,
+		Name:    "A test",
 		OwnerID: 42,
 		Roles: []*Role{
 			&Role{
-				ID: 84,
-				Name: "@everyone",
+				ID:          84,
+				Name:        "@everyone",
 				Permissions: GUILD_EVERYONE_DEFAULT_PERMS,
 			},
 		},
@@ -305,17 +312,17 @@ func InitGuildStaging() {
 	})
 	chans := DB.Core.C("channels")
 	chans.Insert(&Channel{
-		ID: 85,
+		ID:      85,
 		GuildID: 84,
-		Name: "nonsense-chat",
-		Topic: "Ain't nothin' worth seein' here",
-		NSFW: false,
+		Name:    "nonsense-chat",
+		Topic:   "Ain't nothin' worth seein' here",
+		NSFW:    false,
 	})
 	chans.Insert(&Channel{
-		ID: 86,
+		ID:      86,
 		GuildID: 84,
-		Name: "silo-zone",
-		Topic: "Shhhhh",
-		NSFW: true,
+		Name:    "silo-zone",
+		Topic:   "Shhhhh",
+		NSFW:    true,
 	})
 }

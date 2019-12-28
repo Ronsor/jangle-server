@@ -1,27 +1,27 @@
 package main
 
 import (
-	"log"
 	"fmt"
-	"time"
+	"log"
 	"strconv"
+	"time"
 
 	"jangled/util"
 
-	"github.com/valyala/fasthttp"
-	"github.com/fasthttp/router"
 	"github.com/bwmarrin/snowflake"
+	"github.com/fasthttp/router"
+	"github.com/valyala/fasthttp"
 )
 
 func InitRestChannel(r *router.Router) {
 	log.Println("Init /channels Endpoints")
 
 	type APIReqPostChannelsCidMessages struct {
-		Content string `json:"content"`
-		Nonce interface{} `json:"nonce"`
-		TTS bool `json:"tts"`
-		Embed *MessageEmbed `json:"embed"`
-		PayloadJson string `json:"payload_json"`
+		Content     string        `json:"content"`
+		Nonce       interface{}   `json:"nonce"`
+		TTS         bool          `json:"tts"`
+		Embed       *MessageEmbed `json:"embed"`
+		PayloadJson string        `json:"payload_json"`
 	}
 
 	// Why is this so convoluted Discord? multipart/form-data, application/json, "payload_json"????
@@ -60,15 +60,17 @@ func InitRestChannel(r *router.Router) {
 		// Finally construct a minimal message object
 		// TODO: the rest lol
 		m := &Message{
-			Content: req.Content,
-			TTS: req.TTS,
-			Nonce: fmt.Sprintf("%v", req.Nonce),
-			Author: &User{ID: me.ID},
+			Content:   req.Content,
+			TTS:       req.TTS,
+			Nonce:     fmt.Sprintf("%v", req.Nonce),
+			Author:    &User{ID: me.ID},
 			Timestamp: time.Now().Unix(),
-			Embeds: []*MessageEmbed{},
+			Embeds:    []*MessageEmbed{},
 		}
 
-		if req.Embed != nil { m.Embeds = append(m.Embeds, req.Embed) }
+		if req.Embed != nil {
+			m.Embeds = append(m.Embeds, req.Embed)
+		}
 
 		err = ch.CreateMessage(m)
 
@@ -121,7 +123,9 @@ func InitRestChannel(r *router.Router) {
 		}
 
 		outmsgs := []*APITypeMessage{}
-		for _, v := range msgs { outmsgs = append(outmsgs, v.ToAPI()) }
+		for _, v := range msgs {
+			outmsgs = append(outmsgs, v.ToAPI())
+		}
 
 		util.WriteJSON(c, outmsgs)
 		return
@@ -169,9 +173,9 @@ func InitRestChannel(r *router.Router) {
 	}))
 
 	type APIReqPatchChannelsCidMessagesMid struct {
-		Content *string `json:"content"`
-		Embed *MessageEmbed `json:"embed"`
-		Flags int `json:"flags"` // Ignored
+		Content *string       `json:"content"`
+		Embed   *MessageEmbed `json:"embed"`
+		Flags   int           `json:"flags"` // Ignored
 	}
 
 	r.PATCH("/api/v6/channels/:cid/messages/:mid", MwTokenAuth(func(c *fasthttp.RequestCtx) {
@@ -338,7 +342,9 @@ func InitRestChannel(r *router.Router) {
 		}
 
 		outmsgs := []*APITypeMessage{}
-		for _, v := range msgs { outmsgs = append(outmsgs, v.ToAPI()) }
+		for _, v := range msgs {
+			outmsgs = append(outmsgs, v.ToAPI())
+		}
 
 		util.WriteJSON(c, outmsgs)
 		return
@@ -375,10 +381,9 @@ func InitRestChannel(r *router.Router) {
 			return
 		}
 
-		_,_,_,_,_ = me, csnow, msnow, msg, emoji
+		_, _, _, _, _ = me, csnow, msnow, msg, emoji
 
 		c.SetStatusCode(204) // No Content
 	}, "uid"))
 
 }
-

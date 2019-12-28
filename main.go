@@ -1,27 +1,27 @@
 package main
 
 import (
-	"log"
 	"flag"
+	"log"
 
 	"jangled/util"
 
-	"github.com/vharitonsky/iniflags"
 	"github.com/bwmarrin/snowflake"
 	"github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
+	"github.com/vharitonsky/iniflags"
 )
 
 const VERSION = "0.1.0/v6"
 
 var (
-	flgListen = flag.String("listen", "0.0.0.0:8081", "Listen address for API server")
+	flgListen  = flag.String("listen", "0.0.0.0:8081", "Listen address for API server")
 	flgMongoDB = flag.String("mongo", "mongodb://127.0.0.1:3600/?maxIdleTimeMS=0", "MongoDB URI")
 
-	flgAllowReg = flag.Bool("allowRegistration", false, "Allow registration of accounts on this server")
+	flgAllowReg   = flag.Bool("allowRegistration", false, "Allow registration of accounts on this server")
 	flgGatewayUrl = flag.String("apiGatewayUrl", "", "Specify round-robin URL for Gateway v6")
-	flgStaging = flag.Bool("staging", false, "Add dummy data for testing")
-	flgNoPanic = flag.Bool("nopanic", true, "Catch all panics in API handlers")
+	flgStaging    = flag.Bool("staging", false, "Add dummy data for testing")
+	flgNoPanic    = flag.Bool("nopanic", true, "Catch all panics in API handlers")
 
 	flgNode = flag.Int64("node", 1, "Node ID")
 )
@@ -43,12 +43,12 @@ func main() {
 
 	r := router.New()
 	if *flgNoPanic {
-		r.PanicHandler = func (c *fasthttp.RequestCtx, e interface{}) {
+		r.PanicHandler = func(c *fasthttp.RequestCtx, e interface{}) {
 			log.Printf("Internal error: %v", e)
 		}
 	}
 
-	r.GET("/version.txt", func (c *fasthttp.RequestCtx) { c.WriteString(VERSION) })
+	r.GET("/version.txt", func(c *fasthttp.RequestCtx) { c.WriteString(VERSION) })
 	InitRestUser(r)
 	InitRestChannel(r)
 	InitRestGuild(r)
@@ -62,5 +62,3 @@ func main() {
 	log.Fatal(fasthttp.ListenAndServe(*flgListen, r.Handler))
 	log.Println("info:", "shutting down...")
 }
-
-

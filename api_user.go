@@ -5,9 +5,9 @@ import (
 
 	"jangled/util"
 
-	"github.com/valyala/fasthttp"
-	"github.com/fasthttp/router"
 	"github.com/bwmarrin/snowflake"
+	"github.com/fasthttp/router"
+	"github.com/valyala/fasthttp"
 )
 
 func InitRestUser(r *router.Router) {

@@ -9,25 +9,25 @@ import (
 
 // Channel types
 const (
-	CHTYPE_GUILD_TEXT = 0
-	CHTYPE_DM = 1
-	CHTYPE_GUILD_VOICE = 2
-	CHTYPE_GROUP_DM = 3
+	CHTYPE_GUILD_TEXT     = 0
+	CHTYPE_DM             = 1
+	CHTYPE_GUILD_VOICE    = 2
+	CHTYPE_GROUP_DM       = 3
 	CHTYPE_GUILD_CATEGORY = 4
 	// WONTFIX: GUILD_NEWS, GUILD_STORE
 )
 
 type PermissionOverwrite struct {
-	ID snowflake.ID `json:"id"`
-	Type string `json:"type"` // Either "role" or "member"
-	Allow PermSet `json:"allow"`
-	Deny PermSet `json:"deny"`
+	ID    snowflake.ID `json:"id"`
+	Type  string       `json:"type"` // Either "role" or "member"
+	Allow PermSet      `json:"allow"`
+	Deny  PermSet      `json:"deny"`
 }
 
 // Channel is a Discord-compatible structure representing any type of channel
 type Channel struct {
-	ID snowflake.ID `bson:"_id"`
-	Type int `bson:"type"`
+	ID   snowflake.ID `bson:"_id"`
+	Type int          `bson:"type"`
 
 	// Text Channel only
 	LastMessageID snowflake.ID `bson:"last_message_id"`
@@ -37,22 +37,22 @@ type Channel struct {
 
 	// Group DM only
 	OwnerID snowflake.ID `bson:"owner_id"`
-	Icon string `bson:"icon"`
+	Icon    string       `bson:"icon"`
 
 	// Guild only
-	GuildID snowflake.ID `bson:"guild_id"`
-	Position int `bson:"position"`
-	Name string `bson:"name"`
-	ParentID snowflake.ID `bson:"parent_id"`
+	GuildID              snowflake.ID           `bson:"guild_id"`
+	Position             int                    `bson:"position"`
+	Name                 string                 `bson:"name"`
+	ParentID             snowflake.ID           `bson:"parent_id"`
 	PermissionOverwrites []*PermissionOverwrite `bson:"permission_overwrites"`
 
 	// Guild Text Channel only
-	Topic string `bson:"topic"`
-	NSFW bool `bson:"nsfw"`
-	RateLimitPerUser int `bson:"rate_limit_per_user"`
+	Topic            string `bson:"topic"`
+	NSFW             bool   `bson:"nsfw"`
+	RateLimitPerUser int    `bson:"rate_limit_per_user"`
 
 	// Guild Voice Channel only
-	Bitrate int `bson:"bitrate"`
+	Bitrate   int `bson:"bitrate"`
 	UserLimit int `bson:"user_limit"`
 
 	Deleted bool `bson:"deleted"`
@@ -61,13 +61,15 @@ type Channel struct {
 func CreateDMChannel(party1, party2 snowflake.ID) (*Channel, error) {
 	var c2 Channel
 	c := DB.Core.C("channels")
-	e := c.Find(bson.M{"recipients": bson.M{"$all": []snowflake.ID{party1,party2}}, "type": CHTYPE_DM}).One(&c2)
+	e := c.Find(bson.M{"recipients": bson.M{"$all": []snowflake.ID{party1, party2}}, "type": CHTYPE_DM}).One(&c2)
 	if e != nil {
 		c2.ID = flake.Generate()
-		c2.RecipientIDs = []snowflake.ID{party1,party2}
+		c2.RecipientIDs = []snowflake.ID{party1, party2}
 		c2.Type = CHTYPE_DM
 		err := c.Insert(&c2)
-		if err != nil { return nil, err }
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &c2, nil
 }
@@ -97,6 +99,16 @@ func (c *Channel) CreateMessage(m *Message) error {
 	m.ID = flake.Generate()
 	m.ChannelID = c.ID
 	err := d.Insert(&m)
+	if c.IsGuild() && m.WebhookID == 0 {
+		g, err := c.Guild()
+		if err != nil {
+			return err
+		}
+		m.Member, err = g.GetMember(m.Author.ID)
+		if err != nil {
+			return err
+		}
+	}
 	if err == nil {
 		c.LastMessageID = m.ID
 		return c.Save()
@@ -128,7 +140,9 @@ func (c *Channel) Messages(around, before, after snowflake.ID, limit int, extra 
 	}
 	out := []*Message{}
 	err := d.Find(wholequery).Sort("-timestamp").Limit(limit).All(&out)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	return out, nil
 }
 
@@ -142,15 +156,15 @@ func (c *Channel) ToAPI() APITypeAnyChannel {
 		for _, v := range c.RecipientIDs {
 			u, err := GetUserByID(v)
 			if err != nil {
-				rcp = append(rcp, &APITypeUser{ID:v,Discriminator:"0000",Username:"Unknown"})
+				rcp = append(rcp, &APITypeUser{ID: v, Discriminator: "0000", Username: "Unknown"})
 			} else {
 				rcp = append(rcp, u.ToAPI(true))
 			}
 		}
 		return &APITypeDMChannel{
-			ID: c.ID,
-			Type: c.Type,
-			Recipients: rcp,
+			ID:            c.ID,
+			Type:          c.Type,
+			Recipients:    rcp,
 			LastMessageID: c.LastMessageID,
 		}
 	} else if c.Type == CHTYPE_GUILD_TEXT {
@@ -160,14 +174,14 @@ func (c *Channel) ToAPI() APITypeAnyChannel {
 			ovw = append(ovw, &x)
 		}
 		return &APITypeGuildTextChannel{
-			ID: c.ID,
-			GuildID: c.GuildID,
-			Type: c.Type,
-			LastMessageID: c.LastMessageID,
-			Name: c.Name,
-			Topic: c.Topic,
-			NSFW: c.NSFW,
-			Position: c.Position,
+			ID:                   c.ID,
+			GuildID:              c.GuildID,
+			Type:                 c.Type,
+			LastMessageID:        c.LastMessageID,
+			Name:                 c.Name,
+			Topic:                c.Topic,
+			NSFW:                 c.NSFW,
+			Position:             c.Position,
 			PermissionOverwrites: ovw,
 		}
 	}
@@ -187,10 +201,14 @@ func (c *Channel) GetPermissions(u *User) PermSet {
 	}
 	if c.Type == CHTYPE_GUILD_TEXT {
 		gd, err := c.Guild()
-		if err != nil { return 0 }
+		if err != nil {
+			return 0
+		}
 		perm := gd.GetPermissions(u)
 		mem, err := gd.GetMember(u.ID)
-		if err != nil { return 0 }
+		if err != nil {
+			return 0
+		}
 		var uOvw *PermissionOverwrite
 		var uRoles = map[snowflake.ID]bool{}
 		for _, v := range mem.Roles {
@@ -220,7 +238,9 @@ func (c *Channel) GetPermissions(u *User) PermSet {
 func (c *Channel) HasPermissions(u *User, p PermSet) bool {
 	if c.Type == CHTYPE_DM {
 		for _, v := range c.RecipientIDs {
-			if v == u.ID { return true }
+			if v == u.ID {
+				return true
+			}
 		}
 		return false
 	}
@@ -229,12 +249,12 @@ func (c *Channel) HasPermissions(u *User, p PermSet) bool {
 
 func (c *Channel) Save() error {
 	d := DB.Core.C("channels")
-	return d.UpdateId(c.ID, bson.M{"$set":c})
+	return d.UpdateId(c.ID, bson.M{"$set": c})
 }
 
 func InitChannelStaging() {
-//	c := DB.Core.C("channels")
-/*	c.Insert(&Channel{
+	//	c := DB.Core.C("channels")
+	/*	c.Insert(&Channel{
 		ID: 1,
 		Type: CHTYPE_DM,
 		RecipientIDs: []snowflake.ID{42,43},
