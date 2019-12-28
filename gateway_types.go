@@ -42,13 +42,13 @@ const (
 )
 
 // OP_UPDATE_STATUS types
-type StatusType string
 const (
-	STATUS_ONLINE = StatusType("online")
-	STATUS_OFFLINE = StatusType("offline")
-	STATUS_DND = StatusType("dnd")
-	STATUS_IDLE = StatusType("idle")
-	STATUS_INVISIBLE = StatusType("invisible")
+	STATUS_ONLINE = "online"
+	STATUS_OFFLINE = "offline"
+	STATUS_DND = "dnd"
+	STATUS_IDLE = "idle"
+	STATUS_INVISIBLE = "invisible"
+	STATUS_UNKNOWN = ""
 )
 
 // Packet received or sent over the gateway websocket.
@@ -114,7 +114,7 @@ type gwPktDataIdentify struct {
 type gwPktDataUpdateStatus struct {
 	Since time.Duration `json:"since"`
 	Game interface{} `json:"game"`
-	Status StatusType `json:"status"`
+	Status string `json:"status"`
 	AFK bool `json:"afk"`
 }
 
@@ -141,7 +141,7 @@ type gwEvtDataPresenceUpdate struct {
 	Roles []snowflake.ID `json:"roles"`
 	Game interface{} `json:"game"`
 	GuildID snowflake.ID `json:"guild_id"`
-	Status StatusType `json:"status"`
+	Status string `json:"status"`
 	Activities []interface{} `json:"activities"`
 	ClientStatus interface{} `json:"client_status"`
 	Nick string `json:"nick,omitempty"`

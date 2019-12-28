@@ -53,7 +53,7 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 		default:
 			codec = &util.JsonCodec{}
 	}
-	codec.Send(ws, mkGwPkt(GW_OP_HELLO, &gwPktDataHello{60000}))
+	codec.Send(ws, mkGwPkt(GW_OP_HELLO, &gwPktDataHello{45000}))
 	var pkt *gwPacket
 	err := codec.Recv(ws, &pkt)
 	if err != nil {
@@ -83,6 +83,11 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 				ugs = append(ugs, &UnavailableGuild{g.ID, true})
 			}
 
+			if sess.Identity.Presence == nil { sess.Identity.Presence = &gwPktDataUpdateStatus{} }
+			if sess.Identity.Presence.Status == STATUS_UNKNOWN {
+				sess.Identity.Presence.Status = STATUS_ONLINE
+			}
+			log.Println(sess.Identity.Presence)
 			err = SetPresenceForUser(sess.User.ID, sess.Identity.Presence)
 			if err != nil { panic(err) }
 
