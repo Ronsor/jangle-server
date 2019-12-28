@@ -25,7 +25,7 @@ func InitRestChannel(r *router.Router) {
 	}
 
 	// Why is this so convoluted Discord? multipart/form-data, application/json, "payload_json"????
-	r.POST("/api/v6/channels/:cid/messages", MwTokenAuth(func(c *fasthttp.RequestCtx) {
+	r.POST("/api/v6/channels/:cid/messages", MwRl(MwTkA(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		var req APIReqPostChannelsCidMessages
 		cid := c.UserValue("cid").(string)
@@ -82,9 +82,9 @@ func InitRestChannel(r *router.Router) {
 		util.WriteJSON(c, m.ToAPI())
 
 		return
-	}))
+	}), 8, 8))
 
-	r.GET("/api/v6/channels/:cid/messages", MwTokenAuth(func(c *fasthttp.RequestCtx) {
+	r.GET("/api/v6/channels/:cid/messages", MwTkA(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		cid := c.UserValue("cid").(string)
 
@@ -131,7 +131,7 @@ func InitRestChannel(r *router.Router) {
 		return
 	}))
 
-	r.GET("/api/v6/channels/:cid/messages/:mid", MwTokenAuth(func(c *fasthttp.RequestCtx) {
+	r.GET("/api/v6/channels/:cid/messages/:mid", MwTkA(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		cid := c.UserValue("cid").(string)
 		mid := c.UserValue("mid").(string)
@@ -178,7 +178,7 @@ func InitRestChannel(r *router.Router) {
 		Flags   int           `json:"flags"` // Ignored
 	}
 
-	r.PATCH("/api/v6/channels/:cid/messages/:mid", MwTokenAuth(func(c *fasthttp.RequestCtx) {
+	r.PATCH("/api/v6/channels/:cid/messages/:mid", MwTkA(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		var req APIReqPatchChannelsCidMessagesMid
 		cid := c.UserValue("cid").(string)
@@ -228,7 +228,7 @@ func InitRestChannel(r *router.Router) {
 		return
 	}))
 
-	r.DELETE("/api/v6/channels/:cid/messages/:mid", MwTokenAuth(func(c *fasthttp.RequestCtx) {
+	r.DELETE("/api/v6/channels/:cid/messages/:mid", MwTkA(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		cid := c.UserValue("cid").(string)
 		mid := c.UserValue("mid").(string)
@@ -264,7 +264,7 @@ func InitRestChannel(r *router.Router) {
 		c.SetStatusCode(204) // No Content
 	}))
 
-	r.PUT("/api/v6/channels/:cid/pins/:mid", MwTokenAuth(func(c *fasthttp.RequestCtx) {
+	r.PUT("/api/v6/channels/:cid/pins/:mid", MwTkA(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		cid := c.UserValue("cid").(string)
 		mid := c.UserValue("mid").(string)
@@ -306,7 +306,7 @@ func InitRestChannel(r *router.Router) {
 		c.SetStatusCode(204)
 	}))
 
-	r.GET("/api/v6/channels/:cid/pins", MwTokenAuth(func(c *fasthttp.RequestCtx) {
+	r.GET("/api/v6/channels/:cid/pins", MwTkA(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		cid := c.UserValue("cid").(string)
 
@@ -350,7 +350,7 @@ func InitRestChannel(r *router.Router) {
 		return
 	}))
 
-	r.PUT("/api/v6/channels/:cid/messages/:mid/reactions/:emoji/:uid", MwTokenAuth(func(c *fasthttp.RequestCtx) {
+	r.PUT("/api/v6/channels/:cid/messages/:mid/reactions/:emoji/:uid", MwTkA(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		cid := c.UserValue("cid").(string)
 		mid := c.UserValue("mid").(string)

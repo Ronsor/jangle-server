@@ -13,7 +13,7 @@ import (
 func InitRestGuild(r *router.Router) {
 	log.Println("Init /guilds Endpoints")
 
-	r.GET("/api/v6/guilds/:gid", MwTokenAuth(func(c *fasthttp.RequestCtx) {
+	r.GET("/api/v6/guilds/:gid", MwTkA(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		gid := c.UserValue("gid").(string)
 		snow, err := snowflake.ParseString(gid)
@@ -29,7 +29,7 @@ func InitRestGuild(r *router.Router) {
 		util.WriteJSON(c, g.ToAPI(me.ID, false))
 	}))
 
-	r.GET("/api/v6/guilds/:gid/channels", MwTokenAuth(func(c *fasthttp.RequestCtx) {
+	r.GET("/api/v6/guilds/:gid/channels", MwTkA(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		gid := c.UserValue("gid").(string)
 		snow, err := snowflake.ParseString(gid)
@@ -55,7 +55,7 @@ func InitRestGuild(r *router.Router) {
 		NSFW                 bool                          `json:"nsfw"`
 	}
 
-	r.POST("/api/v6/guilds/:gid/channels", MwTokenAuth(func(c *fasthttp.RequestCtx) {
+	r.POST("/api/v6/guilds/:gid/channels", MwTkA(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 
 		var req APIReqPostGuildsGidChannels

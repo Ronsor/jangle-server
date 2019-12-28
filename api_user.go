@@ -13,7 +13,7 @@ import (
 func InitRestUser(r *router.Router) {
 	log.Println("Init /users Endpoints")
 
-	r.GET("/api/v6/users/:uid", MwTokenAuth(func(c *fasthttp.RequestCtx) {
+	r.GET("/api/v6/users/:uid", MwTkA(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		uid := c.UserValue("uid").(string)
 		if uid == "@me" {
@@ -33,7 +33,7 @@ func InitRestUser(r *router.Router) {
 		}
 	}))
 
-	r.GET("/api/v6/users/:uid/settings", MwTokenAuth(func(c *fasthttp.RequestCtx) {
+	r.GET("/api/v6/users/:uid/settings", MwTkA(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		util.WriteJSON(c, me.Settings)
 	}, "uid"))
@@ -42,7 +42,7 @@ func InitRestUser(r *router.Router) {
 		RecipientID snowflake.ID `json:"recipient_id"`
 	}
 
-	r.POST("/api/v6/users/:uid/channels", MwTokenAuth(func(c *fasthttp.RequestCtx) {
+	r.POST("/api/v6/users/:uid/channels", MwTkA(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		var req APIReqPostUsersUidChannels
 		if util.ReadPostJSON(c, &req) != nil {
@@ -63,7 +63,7 @@ func InitRestUser(r *router.Router) {
 		util.WriteJSON(c, ch.ToAPI().(*APITypeDMChannel))
 	}, "uid"))
 
-	r.GET("/api/v6/users/:uid/channels", MwTokenAuth(func(c *fasthttp.RequestCtx) {
+	r.GET("/api/v6/users/:uid/channels", MwTkA(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		// Something *should* be done here
 		chs, err := me.Channels()
@@ -79,7 +79,7 @@ func InitRestUser(r *router.Router) {
 		util.WriteJSON(c, out)
 	}, "uid"))
 
-	r.GET("/api/v6/users/:uid/guilds", MwTokenAuth(func(c *fasthttp.RequestCtx) {
+	r.GET("/api/v6/users/:uid/guilds", MwTkA(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		guilds, err := me.Guilds()
 		if err != nil {

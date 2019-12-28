@@ -11,7 +11,9 @@ require (
 	github.com/globalsign/mgo v0.0.0-20190517090918-73267e130ca1
 	github.com/gorilla/websocket v1.4.1
 	github.com/mitchellh/mapstructure v1.1.2
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/valyala/fasthttp v1.6.0
 	github.com/valyala/fasttemplate v1.1.0 // indirect
 	github.com/vharitonsky/iniflags v0.0.0-20180513140207-a33cd0b5f3de
+	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 )
