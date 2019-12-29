@@ -104,7 +104,14 @@ func GetUserByHttpRequest(c *fasthttp.RequestCtx, ctxvar string) (*User, error) 
 		if uid2 == "" || uid2 == "@me" {
 			return user, nil
 		}
-		// TODO
+		snow, err := snowflake.ParseString(uid2)
+		if err != nil {
+			return nil, err
+		}
+		user, err = GetUserByID(snow)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return user, nil
 }

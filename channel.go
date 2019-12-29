@@ -97,18 +97,11 @@ func GetChannelsByGuild(GuildID snowflake.ID) ([]*Channel, error) {
 func (c *Channel) CreateMessage(m *Message) error {
 	d := DB.Msg.C("msgs")
 	m.ID = flake.Generate()
+	if c.IsGuild() {
+		m.GuildID = c.GuildID
+	}
 	m.ChannelID = c.ID
 	err := d.Insert(&m)
-	if c.IsGuild() && m.WebhookID == 0 {
-		g, err := c.Guild()
-		if err != nil {
-			return err
-		}
-		m.Member, err = g.GetMember(m.Author.ID)
-		if err != nil {
-			return err
-		}
-	}
 	if err == nil {
 		c.LastMessageID = m.ID
 		return c.Save()

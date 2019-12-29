@@ -63,8 +63,8 @@ type Message struct {
 	ChannelID snowflake.ID `bson:"channel_id"`
 	GuildID   snowflake.ID `bson:"guild_id"`
 
-	Author *User        `bson:"author"`
-	Member *GuildMember `bson:"member"`
+	Author *User `bson:"author"`
+	//Member *GuildMember `bson:"member"`
 
 	Content         string `bson:"content"`
 	Timestamp       int64  `bson:"timestamp"`
@@ -102,6 +102,14 @@ func GetMessageByID(i snowflake.ID) (*Message, error) {
 	return &m, nil
 }
 
+func (m *Message) Member() (*GuildMember, error) {
+	gd, err := GetGuildByID(m.GuildID)
+	if err != nil {
+		return nil, err
+	}
+	return gd.GetMember(m.Author.ID)
+}
+
 func (m *Message) Save() error {
 	c := DB.Msg.C("msgs")
 	return c.UpdateId(m.ID, bson.M{"$set": m})
@@ -126,8 +134,8 @@ func (m *Message) ToAPI() (ret *APITypeMessage) {
 		Flags:           m.Flags,
 	}
 
-	if m.Member != nil {
-		ret.Member = m.Member.ToAPI()
+	if mem, err := m.Member(); err == nil {
+		ret.Member = mem.ToAPI()
 		ret.Member.User = nil
 	}
 

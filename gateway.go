@@ -22,14 +22,14 @@ type gwSession struct {
 
 func InitGateway(r *router.Router) {
 	log.Println("Init Gateway Module")
-	r.GET("/api/v6/gateway", func(c *fasthttp.RequestCtx) {
+	r.GET("/api/v6/gateway", MwRl(func(c *fasthttp.RequestCtx) {
 		defer util.TryRecover()
 		gw := "ws://" + string(c.Host()) + "/gateway_ws6"
 		// TODO handle other cases
 		util.WriteJSON(c, &responseGetGateway{URL: gw})
-	})
+	}, 10, 10))
 
-	r.GET("/gateway_ws6/", func(c *fasthttp.RequestCtx) {
+	r.GET("/gateway_ws6/", MwRl(func(c *fasthttp.RequestCtx) {
 		defer util.TryRecover()
 		if string(c.FormValue("v")) != "6" {
 			util.WriteJSONStatus(c, 400, &responseError{Code: 50041, Message: "We only support version 6 here"})
@@ -43,7 +43,7 @@ func InitGateway(r *router.Router) {
 		if err != nil {
 			util.WriteJSONStatus(c, 400, &responseError{Code: 0, Message: "WebSocket initialization failure"})
 		}
-	})
+	}, 4, 1))
 }
 
 func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
@@ -177,6 +177,10 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 		case GW_OP_HEARTBEAT:
 			wsc.Send(&gwPacket{Op: GW_OP_HEARTBEAT_ACK})
 			break
+		case GW_OP_UPDATE_STATUS:
+			var dat gwPktDataUpdateStatus
+			pkt.D(&dat)
+			SetPresenceForUser(sess.User.ID, &dat)
 		}
 	}
 	ws.Close()

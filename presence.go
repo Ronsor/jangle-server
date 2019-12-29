@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/bwmarrin/snowflake"
@@ -16,6 +17,10 @@ type PresenceInternal struct {
 // I dare say it's awful to repurpose a gateway packet data type for this...
 func SetPresenceForUser(userID snowflake.ID, presence *gwPktDataUpdateStatus) error {
 	c := DB.Core.C("presence")
+	if presence.Status != STATUS_ONLINE && presence.Status != STATUS_DND &&
+		presence.Status != STATUS_INVISIBLE && presence.Status != STATUS_OFFLINE {
+		return fmt.Errorf("Bad status")
+	}
 	dat := &PresenceInternal{userID, time.Now(), presence}
 	_, err := c.UpsertId(userID, dat)
 	return err
