@@ -22,12 +22,12 @@ type gwSession struct {
 
 func InitGateway(r *router.Router) {
 	log.Println("Init Gateway Module")
-	r.GET("/api/v6/gateway", MwRl(func(c *fasthttp.RequestCtx) {
+	r.GET("/api/v6/gateway", func(c *fasthttp.RequestCtx) {
 		defer util.TryRecover()
 		gw := "ws://" + string(c.Host()) + "/gateway_ws6"
 		// TODO handle other cases
 		util.WriteJSON(c, &responseGetGateway{URL: gw})
-	}, 10, 10))
+	})
 
 	r.GET("/gateway_ws6/", MwRl(func(c *fasthttp.RequestCtx) {
 		defer util.TryRecover()
@@ -43,7 +43,7 @@ func InitGateway(r *router.Router) {
 		if err != nil {
 			util.WriteJSONStatus(c, 400, &responseError{Code: 0, Message: "WebSocket initialization failure"})
 		}
-	}, 4, 1))
+	}, RL_NEWOBJ))
 }
 
 func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
