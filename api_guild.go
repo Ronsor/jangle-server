@@ -13,7 +13,7 @@ import (
 func InitRestGuild(r *router.Router) {
 	log.Println("Init /guilds Endpoints")
 
-	r.GET("/api/v6/guilds/:gid", MwTkA(func(c *fasthttp.RequestCtx) {
+	r.GET("/api/v6/guilds/:gid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		gid := c.UserValue("gid").(string)
 		snow, err := snowflake.ParseString(gid)
@@ -27,9 +27,9 @@ func InitRestGuild(r *router.Router) {
 			return
 		}
 		util.WriteJSON(c, g.ToAPI(me.ID, false))
-	}))
+	}, RL_GETINFO)))
 
-	r.GET("/api/v6/guilds/:gid/channels", MwTkA(func(c *fasthttp.RequestCtx) {
+	r.GET("/api/v6/guilds/:gid/channels", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		gid := c.UserValue("gid").(string)
 		snow, err := snowflake.ParseString(gid)
@@ -43,7 +43,7 @@ func InitRestGuild(r *router.Router) {
 			return
 		}
 		util.WriteJSON(c, g.ToAPI(me.ID).Channels)
-	}))
+	}, RL_GETINFO)))
 
 	type APIReqPostGuildsGidChannels struct {
 		Name                 string                        `json:"name"`
@@ -55,7 +55,7 @@ func InitRestGuild(r *router.Router) {
 		NSFW                 bool                          `json:"nsfw"`
 	}
 
-	r.POST("/api/v6/guilds/:gid/channels", MwTkA(func(c *fasthttp.RequestCtx) {
+	r.POST("/api/v6/guilds/:gid/channels", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 
 		var req APIReqPostGuildsGidChannels
@@ -124,6 +124,6 @@ func InitRestGuild(r *router.Router) {
 		}
 
 		util.WriteJSON(c, ch.ToAPI())
-	}))
+	}, RL_NEWOBJ)))
 
 }

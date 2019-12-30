@@ -23,14 +23,13 @@ type gwSession struct {
 func InitGateway(r *router.Router) {
 	log.Println("Init Gateway Module")
 	r.GET("/api/v6/gateway", func(c *fasthttp.RequestCtx) {
-		defer util.TryRecover()
 		gw := "ws://" + string(c.Host()) + "/gateway_ws6"
+		if *flgGatewayUrl != "" { gw = *flgGatewayUrl }
 		// TODO handle other cases
 		util.WriteJSON(c, &responseGetGateway{URL: gw})
 	})
 
 	r.GET("/gateway_ws6/", MwRl(func(c *fasthttp.RequestCtx) {
-		defer util.TryRecover()
 		if string(c.FormValue("v")) != "6" {
 			util.WriteJSONStatus(c, 400, &responseError{Code: 50041, Message: "We only support version 6 here"})
 			return
@@ -47,7 +46,6 @@ func InitGateway(r *router.Router) {
 }
 
 func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
-	defer util.TryRecover()
 	defer ws.Close()
 	var sess = &gwSession{}
 	var codec util.Codec

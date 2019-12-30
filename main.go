@@ -44,7 +44,12 @@ func main() {
 	r := router.New()
 	if *flgNoPanic {
 		r.PanicHandler = func(c *fasthttp.RequestCtx, e interface{}) {
+			if err, ok := e.(*APIResponseError); ok {
+				util.WriteJSONStatus(c, 500, err)
+				return
+			}
 			log.Printf("Internal error: %v", e)
+			util.WriteJSONStatus(c, 500, &APIResponseError{0, "Unknown error"})
 		}
 	}
 

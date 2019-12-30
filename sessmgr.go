@@ -127,6 +127,13 @@ func InitSessionManager() {
 					},
 				}, m.ChannelID.String())
 			}
+			if _, ok := uf["pinned"].(bool); ok {
+				SessSub.TryPub(gwPacket{
+					Op: GW_OP_DISPATCH,
+					Type: GW_EVT_CHANNEL_PINS_UPDATE,
+					Data: bson.M{"channel_id": m.ChannelID},
+				}, m.ChannelID.String())
+			}
 			if deleted, ok := uf["deleted"].(bool); ok && deleted {
 				payload := bson.M{
 					"id":         m.ID,
