@@ -72,11 +72,15 @@ func InitRestChannel(r *router.Router) {
 			m.Embeds = append(m.Embeds, req.Embed)
 		}
 
+		if req.Embed == nil && req.Content == "" {
+			util.WriteJSONStatus(c, 400, &APIResponseError{APIERR_EMPTY_MESSAGE, "Can't send an empty messsage"})
+			return
+		}
+
 		err = ch.CreateMessage(m)
 
 		if err != nil {
-			util.WriteJSONStatus(c, 500, &APIResponseError{0, "Failed to send message"})
-			return
+			panic(err)
 		}
 
 		util.WriteJSON(c, m.ToAPI())
@@ -118,8 +122,7 @@ func InitRestChannel(r *router.Router) {
 		msgs, err := ch.Messages(around, before, after, limit)
 
 		if err != nil {
-			util.WriteJSONStatus(c, 500, &APIResponseError{0, "An internal error occurred"})
-			return
+			panic(err)
 		}
 
 		outmsgs := []*APITypeMessage{}
@@ -337,8 +340,7 @@ func InitRestChannel(r *router.Router) {
 		msgs, err := ch.Messages(0, 0, 0, limit, true)
 
 		if err != nil {
-			util.WriteJSONStatus(c, 500, &APIResponseError{0, "An internal error occurred"})
-			return
+			panic(err)
 		}
 
 		outmsgs := []*APITypeMessage{}

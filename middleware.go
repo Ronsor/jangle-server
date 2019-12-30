@@ -17,14 +17,14 @@ type RateLimitClass struct {
 }
 
 var (
-	RL_GETINFO = &RateLimitClass{5, 0}
-	RL_SETINFO = &RateLimitClass{5, 0}
+	RL_GETINFO = &RateLimitClass{5, 1}
+	RL_SETINFO = &RateLimitClass{5, 1}
 
-	RL_SENDMSG = &RateLimitClass{5, 5}
+	RL_SENDMSG = &RateLimitClass{5, 10}
 	RL_RECVMSG = &RateLimitClass{5, 10}
 	RL_DELMSG = &RateLimitClass{10, 10}
 
-	RL_NEWOBJ = &RateLimitClass{3, 0}
+	RL_NEWOBJ = &RateLimitClass{3, 1}
 	RL_DELOBJ = &RateLimitClass{3, 3}
 )
 

@@ -57,8 +57,7 @@ func InitRestUser(r *router.Router) {
 
 		ch, err := CreateDMChannel(me.ID, rcp.ID)
 		if err != nil {
-			util.WriteJSONStatus(c, 500, &APIResponseError{0, "Unknown error"})
-			return
+			panic(err)
 		}
 		util.WriteJSON(c, ch.ToAPI().(*APITypeDMChannel))
 	}, RL_NEWOBJ), "uid"))
@@ -68,7 +67,7 @@ func InitRestUser(r *router.Router) {
 		// Something *should* be done here
 		chs, err := me.Channels()
 		if err != nil {
-			util.WriteJSONStatus(c, 500, &APIResponseError{0, "Unknown error"})
+			panic(err)
 		}
 		out := make([]*APITypeDMChannel, 0, len(chs))
 		for _, v := range chs {
@@ -83,8 +82,7 @@ func InitRestUser(r *router.Router) {
 		me := c.UserValue("m:user").(*User)
 		guilds, err := me.Guilds()
 		if err != nil {
-			util.WriteJSONStatus(c, 500, &APIResponseError{0, "Unknown error"})
-			return
+			panic(err)
 		}
 		out := make([]*APITypeGuild, 0, len(guilds))
 		for _, v := range guilds {
