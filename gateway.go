@@ -24,7 +24,9 @@ func InitGateway(r *router.Router) {
 	log.Println("Init Gateway Module")
 	r.GET("/api/v6/gateway", func(c *fasthttp.RequestCtx) {
 		gw := "ws://" + string(c.Host()) + "/gateway_ws6"
-		if *flgGatewayUrl != "" { gw = *flgGatewayUrl }
+		if *flgGatewayUrl != "" {
+			gw = *flgGatewayUrl
+		}
 		// TODO handle other cases
 		util.WriteJSON(c, &responseGetGateway{URL: gw})
 	})

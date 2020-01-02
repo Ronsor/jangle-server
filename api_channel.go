@@ -10,11 +10,44 @@ import (
 
 	"github.com/bwmarrin/snowflake"
 	"github.com/fasthttp/router"
+	"github.com/globalsign/mgo/bson"
 	"github.com/valyala/fasthttp"
 )
 
 func InitRestChannel(r *router.Router) {
 	log.Println("Init /channels Endpoints")
+
+	r.GET("/api/v6/channels/:cid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		cid := c.UserValue("cid").(string)
+		snow, err := snowflake.ParseString(cid)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			return
+		}
+		ch, err := GetChannelByID(snow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			return
+		}
+
+		if !ch.GetPermissions(me).Has(PERM_VIEW_CHANNEL) {
+			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_MISSING_PERMISSIONS, "You don't have permission to do that"})
+			return
+		}
+
+		util.WriteJSON(c, ch.ToAPI())
+	}, RL_GETINFO)))
+
+	type APIReqPutPatchChannelsCid struct {
+		Name                 *string                       `json:"name"`
+		Position             *int                          `json:"position"`
+		Topic                *string                       `json:"topic"`
+		NSFW                 *bool                         `json:"nsfw"`
+		RateLimitPerUser     *int                          `json:"rate_limit_per_user"`
+		PermissionOverwrites []*APITypePermissionOverwrite `json:"permission_overwrites"`
+		ParentID             *snowflake.ID                 `json:"parent_id"`
+	}
 
 	type APIReqPostChannelsCidMessages struct {
 		Content     string        `json:"content"`
@@ -171,6 +204,47 @@ func InitRestChannel(r *router.Router) {
 		_ = me
 
 		util.WriteJSON(c, msg.ToAPI())
+
+		return
+	}, RL_RECVMSG)))
+
+	r.POST("/api/v6/channels/:cid/messages/:mid/ack", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		cid := c.UserValue("cid").(string)
+		mid := c.UserValue("mid").(string)
+
+		csnow, err := snowflake.ParseString(cid)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			return
+		}
+
+		ch, err := GetChannelByID(csnow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			return
+		}
+
+		if !ch.GetPermissions(me).Has(PERM_VIEW_CHANNEL | PERM_READ_MESSAGE_HISTORY) {
+			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_MISSING_PERMISSIONS, "You don't have permission to do that"})
+			return
+		}
+
+		msnow, err := snowflake.ParseString(mid)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
+			return
+		}
+
+		msg, err := GetMessageByID(msnow)
+		if err != nil || msg.ChannelID != csnow {
+			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
+			return
+		}
+
+		_ = me
+
+		util.WriteJSON(c, bson.M{"token": nil})
 
 		return
 	}, RL_RECVMSG)))

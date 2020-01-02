@@ -22,12 +22,11 @@ var (
 
 	RL_SENDMSG = &RateLimitClass{5, 10}
 	RL_RECVMSG = &RateLimitClass{5, 10}
-	RL_DELMSG = &RateLimitClass{10, 10}
+	RL_DELMSG  = &RateLimitClass{10, 10}
 
 	RL_NEWOBJ = &RateLimitClass{3, 1}
 	RL_DELOBJ = &RateLimitClass{3, 3}
 )
-
 
 // Token-based authorization middleware
 func MwTkA(orig func(c *fasthttp.RequestCtx), uservar ...string) func(c *fasthttp.RequestCtx) {

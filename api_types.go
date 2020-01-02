@@ -7,34 +7,33 @@ import (
 	"github.com/bwmarrin/snowflake"
 )
 
-// API codes
-
-const (
-	APIERR_UNKNOWN_USER        = 10013
-	APIERR_UNKNOWN_CHANNEL     = 10003
-	APIERR_UNKNOWN_GUILD       = 10004
-	APIERR_UNKNOWN_MEMBER      = 10007
-	APIERR_UNKNOWN_MESSAGE     = 10008
-	APIERR_UNAUTHORIZED        = 40001
-	APIERR_MAX_GUILDS = 30001
-	APIERR_MAX_FRIENDS = 30002
-	APIERR_MAX_PINS = 30003
-	APIERR_MAX_GUILD_ROLES = 30005
-	APIERR_MAX_REACTIONS = 30010
-	APIERR_MAX_GUILD_CHANNELS = 30013
-	APIERR_MAX_INVITES = 30016
-	APIERR_MISSING_ACCESS = 50001
-	APIERR_EMPTY_MESSAGE = 50006
-	APIERR_CANT_EDIT_MESSAGE   = 50005
-	APIERR_MISSING_PERMISSIONS = 50013
-	// TODO fill in the rest of the magic numbers
-)
-
-// API call error
+// REST API call error
 type APIResponseError struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 }
+
+// API errors
+var (
+	APIERR_UNKNOWN_USER        = &APIResponseError{10013, "Unknown user"}
+	APIERR_UNKNOWN_CHANNEL     = &APIResponseError{10003, "Unknown channel"}
+	APIERR_UNKNOWN_GUILD       = &APIResponseError{10004, "Unknown guild"}
+	APIERR_UNKNOWN_MEMBER      = &APIResponseError{10007, "Unknown guild member"}
+	APIERR_UNKNOWN_MESSAGE     = &APIResponseError{10008, "Unknown message"}
+	APIERR_UNAUTHORIZED        = &APIResponseError{40001, "Unauthoized"}
+	APIERR_MAX_GUILDS          = &APIResponseError{30001, "Maximum number of guilds reached"}
+	APIERR_MAX_FRIENDS         = &APIResponseError{30002, "Maximum number of friends reached"}
+	APIERR_MAX_PINS            = &APIResponseError{30003, "Maximum number of message pins reached"}
+	APIERR_MAX_GUILD_ROLES     = &APIResponseError{30005, "Maximum number of guild roles reached"}
+	APIERR_MAX_REACTIONS       = &APIResponseError{30010, "Maximum number of message reactions reached"}
+	APIERR_MAX_GUILD_CHANNELS  = &APIResponseError{30013, "Maximum number of guild channels reached"}
+	APIERR_MAX_INVITES         = &APIResponseError{30016, "Maximum number of guild invites reached"}
+	APIERR_MISSING_ACCESS      = &APIResponseError{50001, "Access denied"}
+	APIERR_EMPTY_MESSAGE       = &APIResponseError{50006, "Message is empty"}
+	APIERR_CANT_EDIT_MESSAGE   = &APIResponseError{50005, "Can't edit message"}
+	APIERR_MISSING_PERMISSIONS = &APIResponseError{50013, "Missing required permissions"}
+	// TODO fill in the rest of the magic numbers
+)
 
 func (a *APIResponseError) Error() string {
 	return fmt.Sprintf("Error code %d: %s", a.Code, a.Message)

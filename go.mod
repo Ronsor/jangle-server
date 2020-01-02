@@ -9,11 +9,14 @@ require (
 	github.com/fasthttp/router v0.5.2
 	github.com/fasthttp/websocket v1.4.1
 	github.com/globalsign/mgo v0.0.0-20190517090918-73267e130ca1
+	github.com/go-playground/universal-translator v0.17.0 // indirect
 	github.com/gorilla/websocket v1.4.1
+	github.com/leodido/go-urn v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/valyala/fasthttp v1.6.0
 	github.com/valyala/fasttemplate v1.1.0 // indirect
 	github.com/vharitonsky/iniflags v0.0.0-20180513140207-a33cd0b5f3de
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
+	gopkg.in/go-playground/validator.v9 v9.31.0 // indirect
 )

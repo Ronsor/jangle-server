@@ -123,7 +123,7 @@ func InitRestGuild(r *router.Router) {
 			panic(err)
 		}
 
-		if len(curchs) > 500 {
+		if len(curchs) > LIMIT_MAX_GUILD_CHANNELS {
 			util.WriteJSONStatus(c, 400, &APIResponseError{APIERR_MAX_GUILD_CHANNELS, "Maximum number of guild channels reached"})
 			return
 		}
