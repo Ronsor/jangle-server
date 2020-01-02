@@ -97,9 +97,9 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 		}
 
 		readyPkt := &gwEvtDataReady{
-			Version:	 6,
-			User:	    sess.User.ToAPI(false),
-			Guilds:	  ugs,
+			Version:         6,
+			User:            sess.User.ToAPI(false),
+			Guilds:          ugs,
 			PrivateChannels: []interface{}{},
 		}
 
@@ -113,7 +113,7 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 			out := make([]*APITypeDMChannel, 0, len(chs))
 			for _, v := range chs {
 				if v.Type == CHTYPE_DM {
-	   			     out = append(out, v.ToAPI().(*APITypeDMChannel))
+					out = append(out, v.ToAPI().(*APITypeDMChannel))
 				}
 			}
 
