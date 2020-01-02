@@ -21,12 +21,12 @@ func InitRestUser(r *router.Router) {
 		} else {
 			usnow, err := snowflake.ParseString(uid)
 			if err != nil {
-				util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_USER, "User does not exist"})
+				util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_USER)
 				return
 			}
 			user, err := GetUserByID(usnow)
 			if err != nil {
-				util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_USER, "User does not exist"})
+				util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_USER)
 				return
 			}
 			util.WriteJSON(c, user.ToAPI(true))
@@ -51,7 +51,7 @@ func InitRestUser(r *router.Router) {
 		}
 		rcp, err := GetUserByID(req.RecipientID)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_USER, "User does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_USER)
 			return
 		}
 

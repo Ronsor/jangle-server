@@ -128,9 +128,16 @@ type gwEvtDataReady struct {
 	Version int          `json:"v"`
 	User    *APITypeUser `json:"user"`
 	// Discord docs say this is empty. Why is it even here?
-	PrivateChannels []interface{}       `json:"private_channels"`
+	// Scratch that. They lie. This is used for non-bot accounts.
+	// It's exactly what it says.
+	PrivateChannels interface{}       `json:"private_channels"`
 	Guilds          []*UnavailableGuild `json:"guilds"`
 	SessionID       snowflake.ID        `json:"session_id"`
+
+	Presences interface{} `json:"presences,omitempty"`
+	Relationships interface{} `json:"relationships,omitempty"`
+	UserSettings *UserSettings `json:"user_settings,omitempty"`
+	Notes interface{} `json:"notes,omitempty"`
 }
 
 // Message delete event packet data

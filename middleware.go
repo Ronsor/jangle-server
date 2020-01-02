@@ -34,7 +34,7 @@ func MwTkA(orig func(c *fasthttp.RequestCtx), uservar ...string) func(c *fasthtt
 	return func(c *fasthttp.RequestCtx) {
 		user, err := GetUserByHttpRequest(c, uservar[0])
 		if err != nil {
-			util.WriteJSONStatus(c, 401, &APIResponseError{APIERR_UNAUTHORIZED, err.Error()})
+			util.WriteJSONStatus(c, 401, APIERR_UNAUTHORIZED)
 			return
 		}
 		c.SetUserValue("m:user", user)

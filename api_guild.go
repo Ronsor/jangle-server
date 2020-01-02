@@ -23,7 +23,7 @@ func InitRestGuild(r *router.Router) {
 		}
 		g, err := GetGuildByID(snow)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_GUILD, "The guild specified does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_GUILD)
 			return
 		}
 		util.WriteJSON(c, g.ToAPI(me.ID, false))
@@ -39,7 +39,7 @@ func InitRestGuild(r *router.Router) {
 		}
 		g, err := GetGuildByID(snow)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_GUILD, "The guild specified does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_GUILD)
 			return
 		}
 		util.WriteJSON(c, g.ToAPI(me.ID).Channels)
@@ -73,11 +73,11 @@ func InitRestGuild(r *router.Router) {
 
 		g, err := GetGuildByID(snow)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_GUILD, "The guild specified does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_GUILD)
 			return
 		}
 		if !g.GetPermissions(me).Has(PERM_MANAGE_CHANNELS) {
-			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_MISSING_PERMISSIONS, "Missing MANAGE_CHANNELS permission"})
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
 			return
 		}
 
@@ -104,15 +104,15 @@ func InitRestGuild(r *router.Router) {
 		if ch.ParentID != 0 {
 			pch, err := GetChannelByID(ch.ParentID)
 			if err != nil {
-				util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Parent channel does not exist"})
+				util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
 				return
 			}
 			if pch.GuildID != g.ID {
-				util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Parent channel does not exist"})
+				util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
 				return
 			}
 			if pch.Type != CHTYPE_GUILD_CATEGORY {
-				util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Parent channel does not exist"})
+				util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
 				return
 			}
 		}
@@ -124,7 +124,7 @@ func InitRestGuild(r *router.Router) {
 		}
 
 		if len(curchs) > LIMIT_MAX_GUILD_CHANNELS {
-			util.WriteJSONStatus(c, 400, &APIResponseError{APIERR_MAX_GUILD_CHANNELS, "Maximum number of guild channels reached"})
+			util.WriteJSONStatus(c, 400, APIERR_MAX_GUILD_CHANNELS)
 			return
 		}
 

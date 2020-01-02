@@ -162,7 +162,7 @@ func (g *Guild) AddMember(UserID snowflake.ID, checkBans bool) error {
 func (g *Guild) GetMember(UserID snowflake.ID) (*GuildMember, error) {
 	m, ok := g.Members[UserID]
 	if !ok {
-		return nil, &APIResponseError{APIERR_UNKNOWN_MEMBER, "The member specified does not exist"}
+		return nil, APIERR_UNKNOWN_MEMBER
 	}
 	return m, nil
 }

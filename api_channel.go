@@ -22,17 +22,17 @@ func InitRestChannel(r *router.Router) {
 		cid := c.UserValue("cid").(string)
 		snow, err := snowflake.ParseString(cid)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
 			return
 		}
 		ch, err := GetChannelByID(snow)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
 			return
 		}
 
 		if !ch.GetPermissions(me).Has(PERM_VIEW_CHANNEL) {
-			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_MISSING_PERMISSIONS, "You don't have permission to do that"})
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
 			return
 		}
 
@@ -76,17 +76,17 @@ func InitRestChannel(r *router.Router) {
 
 		snow, err := snowflake.ParseString(cid)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
 			return
 		}
 		ch, err := GetChannelByID(snow)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
 			return
 		}
 
 		if !ch.GetPermissions(me).Has(PERM_SEND_MESSAGES) {
-			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_MISSING_PERMISSIONS, "You don't have permission to do that"})
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
 			return
 		}
 
@@ -106,7 +106,7 @@ func InitRestChannel(r *router.Router) {
 		}
 
 		if req.Embed == nil && req.Content == "" {
-			util.WriteJSONStatus(c, 400, &APIResponseError{APIERR_EMPTY_MESSAGE, "Can't send an empty messsage"})
+			util.WriteJSONStatus(c, 400, APIERR_EMPTY_MESSAGE)
 			return
 		}
 
@@ -129,18 +129,18 @@ func InitRestChannel(r *router.Router) {
 
 		csnow, err := snowflake.ParseString(cid)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
 			return
 		}
 
 		ch, err := GetChannelByID(csnow)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
 			return
 		}
 
 		if !ch.GetPermissions(me).Has(PERM_VIEW_CHANNEL | PERM_READ_MESSAGE_HISTORY) {
-			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_MISSING_PERMISSIONS, "You don't have permission to do that"})
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
 			return
 		}
 
@@ -174,30 +174,30 @@ func InitRestChannel(r *router.Router) {
 
 		csnow, err := snowflake.ParseString(cid)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
 			return
 		}
 
 		ch, err := GetChannelByID(csnow)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
 			return
 		}
 
 		if !ch.GetPermissions(me).Has(PERM_VIEW_CHANNEL | PERM_READ_MESSAGE_HISTORY) {
-			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_MISSING_PERMISSIONS, "You don't have permission to do that"})
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
 			return
 		}
 
 		msnow, err := snowflake.ParseString(mid)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_MESSAGE)
 			return
 		}
 
 		msg, err := GetMessageByID(msnow)
 		if err != nil || msg.ChannelID != csnow {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_MESSAGE)
 			return
 		}
 
@@ -215,30 +215,30 @@ func InitRestChannel(r *router.Router) {
 
 		csnow, err := snowflake.ParseString(cid)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
 			return
 		}
 
 		ch, err := GetChannelByID(csnow)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
 			return
 		}
 
 		if !ch.GetPermissions(me).Has(PERM_VIEW_CHANNEL | PERM_READ_MESSAGE_HISTORY) {
-			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_MISSING_PERMISSIONS, "You don't have permission to do that"})
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
 			return
 		}
 
 		msnow, err := snowflake.ParseString(mid)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_MESSAGE)
 			return
 		}
 
 		msg, err := GetMessageByID(msnow)
 		if err != nil || msg.ChannelID != csnow {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_MESSAGE)
 			return
 		}
 
@@ -267,24 +267,24 @@ func InitRestChannel(r *router.Router) {
 
 		csnow, err := snowflake.ParseString(cid)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
 			return
 		}
 
 		msnow, err := snowflake.ParseString(mid)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_MESSAGE)
 			return
 		}
 
 		msg, err := GetMessageByID(msnow)
 		if err != nil || msg.ChannelID != csnow || msg.Deleted {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_MESSAGE)
 			return
 		}
 
 		if msg.Author.ID != me.ID {
-			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_CANT_EDIT_MESSAGE, "Can't edit message sent by another user"})
+			util.WriteJSONStatus(c, 403, APIERR_CANT_EDIT_MESSAGE)
 			return
 		}
 
@@ -312,25 +312,25 @@ func InitRestChannel(r *router.Router) {
 
 		csnow, err := snowflake.ParseString(cid)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
 			return
 		}
 
 		msnow, err := snowflake.ParseString(mid)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_MESSAGE)
 			return
 		}
 
 		msg, err := GetMessageByID(msnow)
 
 		if msg.Author.ID != me.ID {
-			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_CANT_EDIT_MESSAGE, "Can't delete message sent by another user"})
+			util.WriteJSONStatus(c, 403, APIERR_CANT_EDIT_MESSAGE)
 			return
 		}
 
 		if err != nil || msg.ChannelID != csnow || msg.Deleted {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_MESSAGE)
 			return
 		}
 
@@ -348,31 +348,31 @@ func InitRestChannel(r *router.Router) {
 
 		csnow, err := snowflake.ParseString(cid)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
 			return
 		}
 
 		ch, err := GetChannelByID(csnow)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
 			return
 		}
 
 		if !ch.GetPermissions(me).Has(PERM_MANAGE_MESSAGES) {
-			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_MISSING_PERMISSIONS, "You don't have permission to do that"})
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
 			return
 		}
 
 		msnow, err := snowflake.ParseString(mid)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_MESSAGE)
 			return
 		}
 
 		msg, err := GetMessageByID(msnow)
 
 		if err != nil || msg.ChannelID != csnow || msg.Deleted {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_MESSAGE)
 			return
 		}
 
@@ -391,18 +391,18 @@ func InitRestChannel(r *router.Router) {
 
 		csnow, err := snowflake.ParseString(cid)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
 			return
 		}
 
 		ch, err := GetChannelByID(csnow)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
 			return
 		}
 
 		if !ch.GetPermissions(me).Has(PERM_VIEW_CHANNEL | PERM_READ_MESSAGE_HISTORY) {
-			util.WriteJSONStatus(c, 403, &APIResponseError{APIERR_MISSING_PERMISSIONS, "You don't have permission to do that"})
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
 			return
 		}
 
@@ -433,20 +433,20 @@ func InitRestChannel(r *router.Router) {
 
 		csnow, err := snowflake.ParseString(cid)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_CHANNEL, "Channel does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
 			return
 		}
 
 		msnow, err := snowflake.ParseString(mid)
 		if err != nil {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_MESSAGE)
 			return
 		}
 
 		msg, err := GetMessageByID(msnow)
 
 		if err != nil || msg.ChannelID != csnow || msg.Deleted {
-			util.WriteJSONStatus(c, 404, &APIResponseError{APIERR_UNKNOWN_MESSAGE, "Message does not exist"})
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_MESSAGE)
 			return
 		}
 

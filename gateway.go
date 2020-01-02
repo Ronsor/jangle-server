@@ -96,14 +96,34 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 			panic(err)
 		}
 
+		readyPkt := &gwEvtDataReady{
+			Version:	 6,
+			User:	    sess.User.ToAPI(false),
+			Guilds:	  ugs,
+			PrivateChannels: []interface{}{},
+		}
+
+		if !sess.User.Bot {
+			readyPkt.UserSettings = sess.User.Settings
+
+			chs, err := sess.User.Channels()
+			if err != nil {
+				panic(err)
+			}
+			out := make([]*APITypeDMChannel, 0, len(chs))
+			for _, v := range chs {
+				if v.Type == CHTYPE_DM {
+	   			     out = append(out, v.ToAPI().(*APITypeDMChannel))
+				}
+			}
+
+			readyPkt.PrivateChannels = out
+
+		}
+
 		codec.Send(ws, &gwPacket{
 			GW_OP_DISPATCH,
-			&gwEvtDataReady{
-				Version:         6,
-				User:            sess.User.ToAPI(false),
-				Guilds:          ugs,
-				PrivateChannels: []interface{}{},
-			},
+			readyPkt,
 			GW_EVT_READY,
 			sess.Seq,
 			nil,
