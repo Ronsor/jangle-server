@@ -54,25 +54,27 @@ func InitSessionManager() {
 			uf := evt["updateDescription"].(bson.M)["updatedFields"].(bson.M)
 			for k, v := range uf {
 				if strings.HasPrefix(k, "members.") {
-					var gm GuildMember
+					var gm *GuildMember
 					err := msDecodeBSON(v, &gm)
 					if err != nil {
 						return err
 					}
 					pld := gm.ToAPI()
 					pld.GuildID = g.ID
-					SessSub.TryPub(gwPacket{
-						Op: GW_OP_DISPATCH,
-						Type: GW_EVT_GUILD_MEMBER_ADD,
-						Data: pld,
-						PvtData: &gm,
-					})
-					SessSub.TryPub(gwPacket{
-						Op: GW_OP_DISPATCH,
-						Type: GW_EVT_GUILD_CREATE,
-						Data: g.ToAPI(gm.UserID, true),
-						PvtData: &g,
-					})
+					if gm.UserID != 0 { // Only set on first join
+						SessSub.TryPub(gwPacket{
+							Op: GW_OP_DISPATCH,
+							Type: GW_EVT_GUILD_MEMBER_ADD,
+							Data: pld,
+							PvtData: gm,
+						}, g.ID.String())
+						SessSub.TryPub(gwPacket{
+							Op: GW_OP_DISPATCH,
+							Type: GW_EVT_GUILD_CREATE,
+							Data: g.ToAPI(gm.UserID, true),
+							PvtData: g,
+						}, gm.UserID.String())
+					}
 				}
 			}
 		}

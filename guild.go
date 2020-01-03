@@ -116,7 +116,10 @@ func CreateGuild(u *User, g *Guild) (*Guild, error) {
 		Name: "general",
 		Type: CHTYPE_GUILD_TEXT,
 	})
-	g.AddMember(u.ID, false)
+	err = g.AddMember(u.ID, false)
+	if err != nil {
+		return nil, err
+	}
 	return g, nil
 }
 
