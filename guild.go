@@ -41,7 +41,7 @@ func (gm *GuildMember) ToAPI() *APITypeGuildMember {
 	if roles == nil {
 		roles = []snowflake.ID{}
 	}
-	return &APITypeGuildMember{u.ToAPI(true), gm.Nick, roles, time.Unix(gm.JoinedAt, 0), gm.Deaf, gm.Mute}
+	return &APITypeGuildMember{u.ToAPI(true), gm.Nick, roles, time.Unix(gm.JoinedAt, 0), gm.Deaf, gm.Mute, 0}
 }
 
 type Role struct {
@@ -79,7 +79,7 @@ type Guild struct {
 
 	Roles         []*Role                       `bson:"roles"`
 	Emojis        []*Emoji                      `bson:"emojis"`
-	Members       map[snowflake.ID]*GuildMember `bson:"members"`
+	Members       map[string]*GuildMember `bson:"members"`
 	Features      []string                      `bson:"features"`
 	MfaLevel      int                           `bson:"mfa_level"`
 	ApplicationID snowflake.ID                  `bson:"application_id"`
@@ -99,6 +99,7 @@ type Guild struct {
 func CreateGuild(u *User, g *Guild) (*Guild, error) {
 	g.ID = flake.Generate()
 	g.OwnerID = u.ID
+	g.Members = map[string]*GuildMember{}
 	g.Roles = []*Role{
 		&Role{
 			ID:          g.ID,
@@ -115,12 +116,7 @@ func CreateGuild(u *User, g *Guild) (*Guild, error) {
 		Name: "general",
 		Type: CHTYPE_GUILD_TEXT,
 	})
-	err = g.AddMember(u.ID, false)
-	if err != nil {
-		// TODO: remove the guild
-		// use transactions?
-		return nil, err
-	}
+	g.AddMember(u.ID, false)
 	return g, nil
 }
 
@@ -147,7 +143,7 @@ func GetGuildsByUserID(UserID snowflake.ID) ([]*Guild, error) {
 func (g *Guild) AddMember(UserID snowflake.ID, checkBans bool) error {
 	_ = checkBans // TODO: use this
 	c := DB.Core.C("guilds")
-	if _, ok := g.Members[UserID]; ok {
+	if _, ok := g.Members[UserID.String()]; ok {
 		return &APIResponseError{0, "User has already joined the guild"}
 	}
 	gm := &GuildMember{UserID: UserID, JoinedAt: time.Now().Unix(), Roles: []snowflake.ID{g.ID}}
@@ -155,12 +151,12 @@ func (g *Guild) AddMember(UserID snowflake.ID, checkBans bool) error {
 	if err != nil {
 		return err
 	}
-	g.Members[UserID] = gm
+	g.Members[UserID.String()] = gm
 	return nil
 }
 
 func (g *Guild) GetMember(UserID snowflake.ID) (*GuildMember, error) {
-	m, ok := g.Members[UserID]
+	m, ok := g.Members[UserID.String()]
 	if !ok {
 		return nil, APIERR_UNKNOWN_MEMBER
 	}
@@ -173,7 +169,7 @@ func (g *Guild) DelMember(UserID snowflake.ID) error {
 	if err != nil {
 		return err
 	}
-	delete(g.Members, UserID)
+	delete(g.Members, UserID.String())
 	return nil
 }
 
@@ -245,8 +241,8 @@ func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID, forCreateEv
 		MaxPresences:                5000,
 		VoiceStates:                 []interface{}{},
 	}
-	if oUid != 0 {
-		out.JoinedAt = time.Unix(g.Members[oUid].JoinedAt, 0)
+	if oUid != 0 && g.Members[oUid.String()] != nil {
+		out.JoinedAt = time.Unix(g.Members[oUid.String()].JoinedAt, 0)
 	}
 
 	out.Members = []*APITypeGuildMember{}
@@ -305,9 +301,9 @@ func InitGuildStaging() {
 				Permissions: GUILD_EVERYONE_DEFAULT_PERMS,
 			},
 		},
-		Members: map[snowflake.ID]*GuildMember{
-			42: &GuildMember{UserID: 42, Roles: []snowflake.ID{84}},
-			43: &GuildMember{UserID: 43, Roles: []snowflake.ID{84}},
+		Members: map[string]*GuildMember{
+			"42": &GuildMember{UserID: 42, Roles: []snowflake.ID{84}},
+			"43": &GuildMember{UserID: 43, Roles: []snowflake.ID{84}},
 		},
 	})
 	chans := DB.Core.C("channels")

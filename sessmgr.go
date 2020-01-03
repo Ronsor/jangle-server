@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 	//	"time"
 
 	"github.com/bwmarrin/snowflake"
@@ -32,7 +33,7 @@ func InitSessionManager() {
 			return err
 		}
 		switch evt["operationType"].(string) {
-		case "insert":
+		/*case "insert":
 			var g Guild
 			err := msDecodeBSON(dm, &g)
 			if err != nil {
@@ -41,12 +42,39 @@ func InitSessionManager() {
 			SessSub.TryPub(gwPacket{
 				Op:      GW_OP_DISPATCH,
 				Type:    GW_EVT_GUILD_CREATE,
-				Data:    g.ToAPI(g.OwnerID),
+				Data:    g.ToAPI(g.OwnerID, true),
 				PvtData: &g,
-			}, g.OwnerID.String())
+			}, g.OwnerID.String())*/
 		case "update":
+			g, err := GetGuildByID(snow)
+			if err != nil {
+				return err
+			}
+
 			uf := evt["updateDescription"].(bson.M)["updatedFields"].(bson.M)
-			log.Println("Jnk", uf)
+			for k, v := range uf {
+				if strings.HasPrefix(k, "members.") {
+					var gm GuildMember
+					err := msDecodeBSON(v, &gm)
+					if err != nil {
+						return err
+					}
+					pld := gm.ToAPI()
+					pld.GuildID = g.ID
+					SessSub.TryPub(gwPacket{
+						Op: GW_OP_DISPATCH,
+						Type: GW_EVT_GUILD_MEMBER_ADD,
+						Data: pld,
+						PvtData: &gm,
+					})
+					SessSub.TryPub(gwPacket{
+						Op: GW_OP_DISPATCH,
+						Type: GW_EVT_GUILD_CREATE,
+						Data: g.ToAPI(gm.UserID, true),
+						PvtData: &g,
+					})
+				}
+			}
 		}
 		return nil
 	})

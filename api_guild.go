@@ -46,9 +46,9 @@ func InitRestGuild(r *router.Router) {
 	}, RL_GETINFO)))
 
 	type APIReqPostGuildsGidChannels struct {
-		Name                 string                        `json:"name"`
+		Name                 string                        `json:"name" validate:"min=1,max=64"`
 		Type                 int                           `json:"type"`
-		Topic                string                        `json:"topic"`
+		Topic                string                        `json:"topic" validate:"max=256"`
 		Position             int                           `json:"position"`
 		PermissionOverwrites []*APITypePermissionOverwrite `json:"permission_overwrites"`
 		ParentID             snowflake.ID                  `json:"parent_id"`
@@ -137,4 +137,40 @@ func InitRestGuild(r *router.Router) {
 		util.WriteJSON(c, ch.ToAPI())
 	}, RL_NEWOBJ)))
 
+	type APIReqPostGuilds struct {
+		Name string `json:"name" validate:"min=2,max=100"`
+		Region string `json:"region,omitempty"` // Ignored
+		Icon string `json:"icon,omitempty" validate:"omitempty,datauri"`
+		VerificationLevel int `json:"verification_level,omitempty"`
+		DefaultMessageNotifications int `json:"default_message_notifications,omitempty" validate:"min=0,max=1"`
+		ExplicitContentFilter int `json:"explicit_content_filter" validate:"min=0,max=0"`
+		Roles []*APITypeRole `json:"roles,omitempty"` // Ignored
+		Channels []APITypeAnyChannel `json:"channels,omitempty"` // Ignored
+	}
+
+	r.POST("/api/v6/guilds", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+
+		var req APIReqPostGuilds
+		if util.ReadPostJSON(c, &req) != nil {
+			util.WriteJSONStatus(c, 400, &APIResponseError{0, "Malformed request body"})
+			return
+		}
+
+		gds, err := me.Guilds()
+
+		if len(gds) > LIMIT_MAX_GUILDS {
+			util.WriteJSONStatus(c, 400, APIERR_MAX_GUILDS)
+		}
+
+		g, err := CreateGuild(me, &Guild{
+			Name: req.Name,
+		})
+
+		if err != nil {
+			panic(err)
+		}
+
+		util.WriteJSON(c, g.ToAPI(me.ID, true))
+	}, RL_NEWOBJ)))
 }

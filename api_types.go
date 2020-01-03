@@ -156,6 +156,7 @@ type APITypeGuildMember struct {
 	JoinedAt time.Time      `json:"joined_at"`
 	Deaf     bool           `json:"deaf"`
 	Mute     bool           `json:"mute"`
+	GuildID  snowflake.ID `json:"guild_id,string,omitempty"`
 }
 
 // "Safe" Role type

@@ -3,11 +3,24 @@ package util
 import (
 	"encoding/json"
 
+	"gopkg.in/go-playground/validator.v9"
 	"github.com/valyala/fasthttp"
 )
 
-func ReadPostJSON(c *fasthttp.RequestCtx, i interface{}) error {
-	return json.Unmarshal(c.PostBody(), i)
+func ReadPostJSON(c *fasthttp.RequestCtx, i interface{}, opts ...interface{}) error {
+	err := json.Unmarshal(c.PostBody(), i)
+	if err != nil {
+		return err
+	}
+	if len(opts) == 0 || !opts[0].(bool) {
+		v := validator.New()
+		err = v.Struct(i)
+		if err != nil {
+			panic(err)
+			return err
+		}
+	}
+	return nil
 }
 
 func WriteJSON(c *fasthttp.RequestCtx, i interface{}) error {

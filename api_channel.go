@@ -40,9 +40,9 @@ func InitRestChannel(r *router.Router) {
 	}, RL_GETINFO)))
 
 	type APIReqPutPatchChannelsCid struct {
-		Name                 *string                       `json:"name"`
+		Name                 *string                       `json:"name" validate:"min=1,max=64"`
 		Position             *int                          `json:"position"`
-		Topic                *string                       `json:"topic"`
+		Topic                *string                       `json:"topic" validate:"max=256"`
 		NSFW                 *bool                         `json:"nsfw"`
 		RateLimitPerUser     *int                          `json:"rate_limit_per_user"`
 		PermissionOverwrites []*APITypePermissionOverwrite `json:"permission_overwrites"`
@@ -50,7 +50,7 @@ func InitRestChannel(r *router.Router) {
 	}
 
 	type APIReqPostChannelsCidMessages struct {
-		Content     string        `json:"content"`
+		Content     string        `json:"content" validate:"required"`
 		Nonce       interface{}   `json:"nonce"`
 		TTS         bool          `json:"tts"`
 		Embed       *MessageEmbed `json:"embed"`

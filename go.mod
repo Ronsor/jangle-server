@@ -18,5 +18,5 @@ require (
 	github.com/valyala/fasttemplate v1.1.0 // indirect
 	github.com/vharitonsky/iniflags v0.0.0-20180513140207-a33cd0b5f3de
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
-	gopkg.in/go-playground/validator.v9 v9.31.0 // indirect
+	gopkg.in/go-playground/validator.v9 v9.31.0
 )
