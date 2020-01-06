@@ -59,6 +59,11 @@ func InitSessionManager() {
 					if err != nil {
 						return err
 					}
+					trueid, err := snowflake.ParseString(k[len("members."):])
+					if err != nil {
+						_ = trueid
+						return err
+					}
 					pld := gm.ToAPI()
 					pld.GuildID = g.ID
 					if gm.UserID != 0 { // Only set on first join
@@ -111,6 +116,21 @@ func InitSessionManager() {
 					PvtData: &c,
 				}, ids[0].String(), ids[1].String())
 			}
+		case "update":
+			uf := evt["updateDescription"].(bson.M)["updatedFields"].(bson.M)
+			if len(uf) == 1 && uf["last_message_id"] != 0 {
+				return nil
+			}
+			ch, err := GetChannelByID(snow)
+			if err != nil {
+				return err
+			}
+			SessSub.TryPub(gwPacket{
+				Op: GW_OP_DISPATCH,
+				Type: GW_EVT_CHANNEL_UPDATE,
+				Data: ch.ToAPI(),
+				PvtData: &ch,
+			}, ch.ID.String())
 		}
 		return nil
 	})

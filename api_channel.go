@@ -39,18 +39,91 @@ func InitRestChannel(r *router.Router) {
 		util.WriteJSON(c, ch.ToAPI())
 	}, RL_GETINFO)))
 
+	r.DELETE("/api/v6/channels/:cid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		cid := c.UserValue("cid").(string)
+		snow, err := snowflake.ParseString(cid)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
+			return
+		}
+
+		ch, err := GetChannelByID(snow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
+			return
+		}
+
+		if !ch.GetPermissions(me).Has(PERM_MANAGE_CHANNELS) {
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
+			return
+		}
+
+		util.WriteJSON(c, ch.ToAPI())
+
+		ch.Delete()
+		// It was nice knowing ya
+	}, RL_DELOBJ)))
+
 	type APIReqPutPatchChannelsCid struct {
-		Name                 *string                       `json:"name" validate:"min=1,max=64"`
-		Position             *int                          `json:"position"`
-		Topic                *string                       `json:"topic" validate:"max=256"`
-		NSFW                 *bool                         `json:"nsfw"`
-		RateLimitPerUser     *int                          `json:"rate_limit_per_user"`
-		PermissionOverwrites []*APITypePermissionOverwrite `json:"permission_overwrites"`
-		ParentID             *snowflake.ID                 `json:"parent_id"`
+		Name                 *string                       `json:"name,omitempty" validate:"omitempty,min=1,max=64"`
+		Position             *int                          `json:"position,omitempty" validate:"omitempty,min=0"`
+		Topic                *string                       `json:"topic,omitempty" validate:"omitempty,max=256"`
+		NSFW                 *bool                         `json:"nsfw,omitempty"`
+		RateLimitPerUser     *int                          `json:"rate_limit_per_user,omitempty" validate:"omitempty,min=0 max=86400"`
+		PermissionOverwrites []*APITypePermissionOverwrite `json:"permission_overwrites,omitempty"`
+		ParentID             *snowflake.ID                 `json:"parent_id,string,omitempty"`
 	}
 
+	APIReqPutPatchChannelsCidFn := MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		var req APIReqPutPatchChannelsCid
+		if util.ReadPostJSON(c, &req) != nil {
+			util.WriteJSONStatus(c, 400, &APIResponseError{0, "Malformed request body"})
+			return
+		}
+		cid := c.UserValue("cid").(string)
+		snow, err := snowflake.ParseString(cid)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
+			return
+		}
+
+		ch, err := GetChannelByID(snow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
+			return
+		}
+
+		if !ch.GetPermissions(me).Has(PERM_MANAGE_CHANNELS) {
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
+			return
+		}
+
+		if req.Name != nil { ch.Name = *req.Name }
+		if req.Position != nil { ch.Position = *req.Position }
+		if req.Topic != nil { ch.Topic = *req.Topic }
+		if req.NSFW != nil { ch.NSFW = *req.NSFW }
+		if req.RateLimitPerUser != nil { ch.RateLimitPerUser = *req.RateLimitPerUser }
+		if req.ParentID != nil {
+			pid := *req.ParentID
+			pch, err := GetChannelByID(pid)
+			if err != nil || pch.GuildID != ch.GuildID || pch.Type != CHTYPE_GUILD_CATEGORY || ch.Type == CHTYPE_GUILD_CATEGORY { // this is loaded
+				util.WriteJSONStatus(c, 400, APIERR_UNKNOWN_CHANNEL)
+			}
+			ch.ParentID = pid
+		}
+
+		ch.Save()
+
+		util.WriteJSON(c, ch.ToAPI())
+	}, RL_SETINFO))
+
+	r.PATCH("/api/v6/channels/:cid", APIReqPutPatchChannelsCidFn)
+	r.PUT("/api/v6/channels/:cid", APIReqPutPatchChannelsCidFn)
+
 	type APIReqPostChannelsCidMessages struct {
-		Content     string        `json:"content" validate:"required"`
+		Content     string        `json:"content" validate:"required_without=Embed"`
 		Nonce       interface{}   `json:"nonce"`
 		TTS         bool          `json:"tts"`
 		Embed       *MessageEmbed `json:"embed"`

@@ -143,6 +143,21 @@ func (c *Channel) IsGuild() bool {
 	return c.Type == CHTYPE_GUILD_TEXT // TODO: the other types
 }
 
+func (c *Channel) Delete() error {
+	if c.Type != CHTYPE_GUILD_TEXT {
+		return nil // We don't actually let you delete DM channels
+	}
+	msgcol := DB.Msg.C("msgs")
+	chcol := DB.Core.C("channels")
+	err := msgcol.Remove(bson.M{"channel_id": c.ID})
+	if err != nil {
+		return err
+	}
+	err = chcol.Remove(bson.M{"_id": c.ID})
+	// Goodbye!
+	return err
+}
+
 func (c *Channel) ToAPI() APITypeAnyChannel {
 	if c.Type == CHTYPE_DM {
 		rcp := []*APITypeUser{}
