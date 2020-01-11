@@ -15,11 +15,12 @@ type APIResponseError struct {
 
 // API errors
 var (
-	APIERR_UNKNOWN_USER        = &APIResponseError{10013, "Unknown user"}
 	APIERR_UNKNOWN_CHANNEL     = &APIResponseError{10003, "Unknown channel"}
 	APIERR_UNKNOWN_GUILD       = &APIResponseError{10004, "Unknown guild"}
 	APIERR_UNKNOWN_MEMBER      = &APIResponseError{10007, "Unknown guild member"}
 	APIERR_UNKNOWN_MESSAGE     = &APIResponseError{10008, "Unknown message"}
+	APIERR_UNKNOWN_ROLE 	   = &APIResponseError{10011, "Unknown guild role"}
+	APIERR_UNKNOWN_USER        = &APIResponseError{10013, "Unknown user"}
 	APIERR_UNAUTHORIZED        = &APIResponseError{40001, "Unauthoized"}
 	APIERR_MAX_GUILDS          = &APIResponseError{30001, "Maximum number of guilds reached"}
 	APIERR_MAX_FRIENDS         = &APIResponseError{30002, "Maximum number of friends reached"}

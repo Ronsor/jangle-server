@@ -44,6 +44,15 @@ type GuildMember struct {
 	Mute         bool           `bson:"mute"`
 }
 
+func (gm *GuildMember) AddRole(
+
+func (gm *GuildMember) DelRole(id snowflake.ID) {
+	for k, v := range gm.Roles {
+		if v != id { continue }
+		gm.Roles[k] = gm.Roles[len(gm.Roles)-1]
+	}
+}
+
 func (gm *GuildMember) ToAPI() *APITypeGuildMember {
 	u, _ := GetUserByID(gm.UserID)
 	roles := gm.Roles
@@ -86,7 +95,7 @@ type Guild struct {
 	DefaultMessageNotifications int `bson:"default_message_notifications"`
 	ExplicitContentFilter       int `bson:"explicit_content_filter"`
 
-	Roles         []*Role                       `bson:"roles"`
+	Roles         map[string]*Role                       `bson:"roles"`
 	Emojis        []*Emoji                      `bson:"emojis"`
 	Members       map[string]*GuildMember `bson:"members"`
 	Features      []string                      `bson:"features"`
@@ -109,8 +118,8 @@ func CreateGuild(u *User, g *Guild) (*Guild, error) {
 	g.ID = flake.Generate()
 	g.OwnerID = u.ID
 	g.Members = map[string]*GuildMember{}
-	g.Roles = []*Role{
-		&Role{
+	g.Roles = map[string]*Role{
+		g.ID.String(): &Role{
 			ID:          g.ID,
 			Name:        "@everyone",
 			Permissions: GUILD_EVERYONE_DEFAULT_PERMS,
@@ -221,6 +230,37 @@ func (g *Guild) CreateChannel(ch *Channel) (*Channel, error) {
 	return ch, nil
 }
 
+func (g *Guild) AddRole(r *Role) error {
+	if r.ID == 0 {
+		r.ID = flake.Generate()
+	}
+	c := DB.Core.C("guilds")
+	err := c.UpdateId(g.ID, bson.M{"$set": bson.M{"roles." + r.ID.String(): r}})
+	if err != nil {
+		return err
+	}
+	g.Roles[r.ID.String()] = r
+	return nil
+}
+
+func (g *Guild) GetRole(id snowflake.ID) (*Role, error) {
+	r, ok := g.Roles[id.String()]
+	if !ok {
+		return nil, APIERR_UNKNOWN_ROLE
+	}
+	return r, nil
+}
+
+func (g *Guild) DelRole(id snowflake.ID) error {
+	c := DB.Core.C("guilds")
+	err := c.UpdateId(g.ID, bson.M{"$unset": bson.M{"roles." + id.String(): ""}})
+	if err != nil {
+		return err
+	}
+	delete(g.Roles, id.String())
+	return nil
+}
+
 func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID, forCreateEvent bool */) *APITypeGuild {
 	var oUid snowflake.ID
 	var forCreateEvent = true
@@ -306,8 +346,8 @@ func InitGuildStaging() {
 		ID:      84,
 		Name:    "A test",
 		OwnerID: 42,
-		Roles: []*Role{
-			&Role{
+		Roles: map[string]*Role{
+			"84": &Role{
 				ID:          84,
 				Name:        "@everyone",
 				Permissions: GUILD_EVERYONE_DEFAULT_PERMS,

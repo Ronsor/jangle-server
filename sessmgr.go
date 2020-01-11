@@ -118,19 +118,21 @@ func InitSessionManager() {
 			}
 		case "update":
 			uf := evt["updateDescription"].(bson.M)["updatedFields"].(bson.M)
-			if len(uf) == 1 && uf["last_message_id"] != 0 {
+			if _, ok := uf["last_message_id"]; len(uf) == 1 && ok {
 				return nil
 			}
 			ch, err := GetChannelByID(snow)
 			if err != nil {
 				return err
 			}
+			tgt := snow.String()
+			if ch.IsGuild() { tgt = ch.GuildID.String() }
 			SessSub.TryPub(gwPacket{
 				Op: GW_OP_DISPATCH,
 				Type: GW_EVT_CHANNEL_UPDATE,
 				Data: ch.ToAPI(),
 				PvtData: &ch,
-			}, ch.ID.String())
+			}, tgt)
 		}
 		return nil
 	})

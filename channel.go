@@ -74,20 +74,30 @@ func CreateDMChannel(party1, party2 snowflake.ID) (*Channel, error) {
 	return &c2, nil
 }
 
-func GetChannelByID(ID snowflake.ID) (*Channel, error) {
+func GetChannelByID(id snowflake.ID) (*Channel, error) {
 	var c2 Channel
 	c := DB.Core.C("channels")
-	e := c.Find(bson.M{"_id": ID}).One(&c2)
+	e := c.Find(bson.M{"_id": id}).One(&c2)
 	if e != nil {
 		return nil, e
 	}
 	return &c2, nil
 }
 
-func GetChannelsByGuild(GuildID snowflake.ID) ([]*Channel, error) {
+func GetChannelsByGuild(guildID snowflake.ID) ([]*Channel, error) {
 	var c2 []*Channel
 	c := DB.Core.C("channels")
-	e := c.Find(bson.M{"guild_id": GuildID}).All(&c2)
+	e := c.Find(bson.M{"guild_id": guildID}).All(&c2)
+	if e != nil {
+		return nil, e
+	}
+	return c2, nil
+}
+
+func GetChannelsByParentID(parentID snowflake.ID) ([]*Channel, error) {
+	var c2 []*Channel
+	c := DB.Core.C("channels")
+	e := c.Find(bson.M{"parent_id": parentID}).All(&c2)
 	if e != nil {
 		return nil, e
 	}
@@ -144,16 +154,31 @@ func (c *Channel) IsGuild() bool {
 }
 
 func (c *Channel) Delete() error {
-	if c.Type != CHTYPE_GUILD_TEXT {
+	if !c.IsGuild() {
 		return nil // We don't actually let you delete DM channels
 	}
-	msgcol := DB.Msg.C("msgs")
 	chcol := DB.Core.C("channels")
-	err := msgcol.Remove(bson.M{"channel_id": c.ID})
-	if err != nil {
-		return err
+	if c.Type == CHTYPE_GUILD_TEXT {
+		msgcol := DB.Msg.C("msgs")
+		err := msgcol.Remove(bson.M{"channel_id": c.ID})
+		if err != nil {
+			return err
+		}
 	}
-	err = chcol.Remove(bson.M{"_id": c.ID})
+	if c.Type == CHTYPE_GUILD_CATEGORY {
+		chs, err := GetChannelsByParentID(c.ID)
+		if err != nil {
+			return err
+		}
+		for _, v := range chs {
+			// This is probably a race condition
+			// Channel update (PUT/PATCH /api/v6/channels/:cid) and (DELETE /api/v6/channels/:parentcid)  Channel parent ID set to 0
+			// Still, this is probably not going to happen so <shrug>
+			v.ParentID = 0
+			v.Save()
+		}
+	}
+	err := chcol.RemoveId(c.ID)
 	// Goodbye!
 	return err
 }
@@ -201,6 +226,15 @@ func (c *Channel) Guild() (*Guild, error) {
 		return nil, fmt.Errorf("This is not a guild channel")
 	}
 	return GetGuildByID(c.GuildID)
+}
+
+func (c *Channel) SetPermissionOverwrites(po []*PermissionOverwrite, u *User) error {
+	// TODO: actually check stuff
+	if !c.GetPermissions(u).Has(PERM_ADMINISTRATOR) {
+		return fmt.Errorf("Permission denied")
+	}
+	c.PermissionOverwrites = po
+	return c.Save()
 }
 
 func (c *Channel) GetPermissions(u *User) PermSet {

@@ -59,9 +59,14 @@ func InitRestChannel(r *router.Router) {
 			return
 		}
 
-		util.WriteJSON(c, ch.ToAPI())
+		resp := ch.ToAPI()
 
-		ch.Delete()
+		err = ch.Delete()
+		if err != nil {
+			panic(err)
+		}
+
+		util.WriteJSON(c, resp)
 		// It was nice knowing ya
 	}, RL_DELOBJ)))
 
@@ -112,6 +117,18 @@ func InitRestChannel(r *router.Router) {
 				util.WriteJSONStatus(c, 400, APIERR_UNKNOWN_CHANNEL)
 			}
 			ch.ParentID = pid
+		}
+		if req.PermissionOverwrites != nil {
+			po := []*PermissionOverwrite{}
+			for _, v := range req.PermissionOverwrites {
+				x := PermissionOverwrite(*v)
+				po = append(po, &x)
+			}
+			err := ch.SetPermissionOverwrites(po, me)
+			if err != nil {
+				util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
+				return
+			}
 		}
 
 		ch.Save()

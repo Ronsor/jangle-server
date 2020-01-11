@@ -29,8 +29,10 @@ const (
 // UserSettings is a Discord-compatible structure containing a user's settings
 // This struct is safe to be returned by an API call
 type UserSettings struct {
-	Locale     string `bson:"locale"`
-	AfkTimeout int    `bson:"afk_timeout"`
+	Locale     string `json:"locale"`
+	AfkTimeout int    `json:"afk_timeout"`
+	Theme string `json:"theme"`
+	Status string `json:"status"`
 	// TODO: the rest
 }
 
