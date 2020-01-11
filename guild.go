@@ -19,12 +19,12 @@ const (
 )
 
 const (
-	GUILD_FEATURE_BANNER = "BANNER"
+	GUILD_FEATURE_BANNER        = "BANNER"
 	GUILD_FEATURE_INVITE_SPLASH = "INVITE_SPLASH"
-	GUILD_FEATURE_DISCOVERABLE = "DISCOVERABLE"
-	GUILD_FEATURE_PARTNERED = "PARTNERED"
-	GUILD_FEATURE_VANITY_URL = "VANITY_URL"
-	GUILD_FEATURE_VERIFIED = "VERIFIED"
+	GUILD_FEATURE_DISCOVERABLE  = "DISCOVERABLE"
+	GUILD_FEATURE_PARTNERED     = "PARTNERED"
+	GUILD_FEATURE_VANITY_URL    = "VANITY_URL"
+	GUILD_FEATURE_VERIFIED      = "VERIFIED"
 )
 
 // Represents a currently unavailable guild
@@ -44,12 +44,31 @@ type GuildMember struct {
 	Mute         bool           `bson:"mute"`
 }
 
-func (gm *GuildMember) AddRole(
+func (gm *GuildMember) AddRole(id snowflake.ID) {
+	for _, v := range gm.Roles {
+		if v == id {
+			return
+		}
+	}
+	gm.Roles = append(gm.Roles, id)
+}
+
+func (gm *GuildMember) HasRole(id snowflake.ID) bool {
+	for _, v := range gm.Roles {
+		if v == id {
+			return true
+		}
+	}
+	return false
+}
 
 func (gm *GuildMember) DelRole(id snowflake.ID) {
 	for k, v := range gm.Roles {
-		if v != id { continue }
+		if v != id {
+			continue
+		}
 		gm.Roles[k] = gm.Roles[len(gm.Roles)-1]
+		gm.Roles = gm.Roles[:len(gm.Roles)-1]
 	}
 }
 
@@ -95,12 +114,12 @@ type Guild struct {
 	DefaultMessageNotifications int `bson:"default_message_notifications"`
 	ExplicitContentFilter       int `bson:"explicit_content_filter"`
 
-	Roles         map[string]*Role                       `bson:"roles"`
-	Emojis        []*Emoji                      `bson:"emojis"`
+	Roles         map[string]*Role        `bson:"roles"`
+	Emojis        []*Emoji                `bson:"emojis"`
 	Members       map[string]*GuildMember `bson:"members"`
-	Features      []string                      `bson:"features"`
-	MfaLevel      int                           `bson:"mfa_level"`
-	ApplicationID snowflake.ID                  `bson:"application_id"`
+	Features      []string                `bson:"features"`
+	MfaLevel      int                     `bson:"mfa_level"`
+	ApplicationID snowflake.ID            `bson:"application_id"`
 
 	WidgetEnabled   bool         `bson:"widget_enabled"`
 	WidgetChannelID snowflake.ID `bson:"widget_channel_id"`
@@ -253,11 +272,29 @@ func (g *Guild) GetRole(id snowflake.ID) (*Role, error) {
 
 func (g *Guild) DelRole(id snowflake.ID) error {
 	c := DB.Core.C("guilds")
-	err := c.UpdateId(g.ID, bson.M{"$unset": bson.M{"roles." + id.String(): ""}})
+	for _, v := range g.Members {
+		v.DelRole(id)
+	}
+	err := g.Save()
+	if err != nil {
+		return err
+	}
+	err = c.UpdateId(g.ID, bson.M{"$unset": bson.M{"roles." + id.String(): ""}})
 	if err != nil {
 		return err
 	}
 	delete(g.Roles, id.String())
+	return nil
+}
+
+func (g *Guild) Save(flags ...bool /* membersOnly bool */) error {
+	c := DB.Core.C("guilds")
+	if len(flags) > 0 && flags[0] {
+		err := c.UpdateId(g.ID, bson.M{"$set": bson.M{"members": g.Members}})
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
