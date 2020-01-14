@@ -90,6 +90,7 @@ type Role struct {
 	Permissions PermSet      `bson:"permission"`
 	Managed     bool         `bson:"managed"`
 	Mentionable bool         `bson:"mentionable"`
+	Position int `bson:"position"`
 }
 
 func (r *Role) ToAPI() *APITypeRole {
@@ -301,8 +302,10 @@ func (g *Guild) Save(flags ...bool /* membersOnly bool */) error {
 func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID, forCreateEvent bool */) *APITypeGuild {
 	var oUid snowflake.ID
 	var forCreateEvent = true
+	var perm = 0
 	if len(options) > 0 {
 		oUid = options[0].(snowflake.ID)
+		perm = g.GetPermissions(&User{ID: oUid}) // This is an awful hack
 	}
 	if len(options) > 1 {
 		forCreateEvent = options[1].(bool)
@@ -314,7 +317,7 @@ func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID, forCreateEv
 		Splash:                      g.Splash,
 		Owner:                       oUid == g.OwnerID,
 		OwnerID:                     g.OwnerID,
-		Permissions:                 0, // TODO
+		Permissions:                 perm, // TODO
 		Region:                      g.Region,
 		DefaultMessageNotifications: g.DefaultMessageNotifications,
 		ExplicitContentFilter:       g.ExplicitContentFilter,
