@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"strconv"
 
 	"jangled/util"
 
@@ -18,7 +19,7 @@ func InitRestGuild(r *router.Router) {
 		gid := c.UserValue("gid").(string)
 		snow, err := snowflake.ParseString(gid)
 		if err != nil {
-			util.WriteJSONStatus(c, 400, &APIResponseError{0, "Invalid snowflake ID"})
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
 			return
 		}
 		g, err := GetGuildByID(snow)
@@ -29,12 +30,37 @@ func InitRestGuild(r *router.Router) {
 		util.WriteJSON(c, g.ToAPI(me.ID, false))
 	}, RL_GETINFO)))
 
+	r.GET("/api/v6/guilds/:gid/members", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		//me := c.UserValue("m:user").(*User)
+		//TODO: check if user is in guild
+		gid := c.UserValue("gid").(string)
+		snow, err := snowflake.ParseString(gid)
+		if err != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+		g, err := GetGuildByID(snow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_GUILD)
+			return
+		}
+                after, _ := snowflake.ParseBytes(c.FormValue("after"))
+		limit, _ := strconv.Atoi(string(c.FormValue("limit")))
+		mem, err := g.ListMembers(limit, after)
+		if err != nil {
+			panic(err)
+		}
+		o := []*APITypeGuildMember{}
+		for _, v := range mem { o = append(o, v.ToAPI()) }
+		util.WriteJSON(c, o)
+	}, RL_GETINFO)))
+
 	r.GET("/api/v6/guilds/:gid/channels", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		gid := c.UserValue("gid").(string)
 		snow, err := snowflake.ParseString(gid)
 		if err != nil {
-			util.WriteJSONStatus(c, 400, &APIResponseError{0, "Invalid snowflake ID"})
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
 			return
 		}
 		g, err := GetGuildByID(snow)
@@ -44,6 +70,49 @@ func InitRestGuild(r *router.Router) {
 		}
 		util.WriteJSON(c, g.ToAPI(me.ID).Channels)
 	}, RL_GETINFO)))
+
+	type APIReqPatchGuildsGidChannels []struct{
+		ID snowflake.ID `json:"id,string"`
+		Position int `json:"position"`
+	}
+
+	r.PATCH("/api/v6/guilds/:gid/channels", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+
+		var req APIReqPatchGuildsGidChannels
+		if util.ReadPostJSON(c, &req) != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+
+		gid := c.UserValue("gid").(string)
+		snow, err := snowflake.ParseString(gid)
+		if err != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+		g, err := GetGuildByID(snow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_GUILD)
+			return
+		}
+		if !g.GetPermissions(me).Has(PERM_MANAGE_CHANNELS) {
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
+			return
+		}
+
+		for _, v := range req {
+			ch, err := GetChannelByID(v.ID)
+			if err != nil || ch.GuildID != g.ID {
+				util.WriteJSONStatus(c, 403, APIERR_UNKNOWN_CHANNEL)
+				return
+			}
+			ch.Position = v.Position
+			ch.Save()
+		}
+
+		c.SetStatusCode(204)
+	}, RL_SETINFO)))
 
 	type APIReqPostGuildsGidChannels struct {
 		Name                 string                        `json:"name" validate:"min=1,max=64"`
@@ -60,14 +129,14 @@ func InitRestGuild(r *router.Router) {
 
 		var req APIReqPostGuildsGidChannels
 		if util.ReadPostJSON(c, &req) != nil {
-			util.WriteJSONStatus(c, 400, &APIResponseError{0, "Malformed request body"})
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
 			return
 		}
 
 		gid := c.UserValue("gid").(string)
 		snow, err := snowflake.ParseString(gid)
 		if err != nil {
-			util.WriteJSONStatus(c, 400, &APIResponseError{0, "Invalid snowflake ID"})
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
 			return
 		}
 
@@ -91,14 +160,14 @@ func InitRestGuild(r *router.Router) {
 		}
 
 		if ch.Name == "" {
-			util.WriteJSONStatus(c, 400, &APIResponseError{0, "Missing channel name"})
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
 			return
 		}
 
 		if ch.Type == 0 {
 			ch.Type = CHTYPE_GUILD_TEXT
 		} else if ch.Type != CHTYPE_GUILD_TEXT && ch.Type != CHTYPE_GUILD_CATEGORY {
-			util.WriteJSONStatus(c, 400, &APIResponseError{0, "Unsupported channel type"})
+			util.WriteJSONStatus(c, 400, APIERR_UNKNOWN_CHANNEL)
 			return
 		}
 		if ch.ParentID != 0 {
@@ -153,7 +222,7 @@ func InitRestGuild(r *router.Router) {
 
 		var req APIReqPostGuilds
 		if util.ReadPostJSON(c, &req) != nil {
-			util.WriteJSONStatus(c, 400, &APIResponseError{0, "Malformed request body"})
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
 			return
 		}
 

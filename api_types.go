@@ -15,6 +15,7 @@ type APIResponseError struct {
 
 // API errors
 var (
+	APIERR_BAD_REQUEST = &APIResponseError{0, "Unknown malformed request"}
 	APIERR_UNKNOWN_CHANNEL     = &APIResponseError{10003, "Unknown channel"}
 	APIERR_UNKNOWN_GUILD       = &APIResponseError{10004, "Unknown guild"}
 	APIERR_UNKNOWN_MEMBER      = &APIResponseError{10007, "Unknown guild member"}

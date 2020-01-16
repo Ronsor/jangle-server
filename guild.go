@@ -2,6 +2,8 @@ package main
 
 import (
 	"time"
+	"sort"
+	"fmt"
 
 	"github.com/bwmarrin/snowflake"
 	"github.com/globalsign/mgo/bson"
@@ -90,7 +92,6 @@ type Role struct {
 	Permissions PermSet      `bson:"permission"`
 	Managed     bool         `bson:"managed"`
 	Mentionable bool         `bson:"mentionable"`
-	Position int `bson:"position"`
 }
 
 func (r *Role) ToAPI() *APITypeRole {
@@ -181,6 +182,25 @@ func GetGuildsByUserID(UserID snowflake.ID) ([]*Guild, error) {
 	return g2, nil
 }
 
+func (g *Guild) AddFeature(feat string) error {
+	for _, v := range g.Features {
+		if v == feat {
+			return nil
+		}
+	}
+	g.Features = append(g.Features, feat)
+	return g.Save(false, true /* featureList */)
+}
+
+func (g *Guild) HasFeature(feat string) bool {
+	for _, v := range g.Features {
+		if v == feat {
+			return true
+		}
+	}
+	return false
+}
+
 func (g *Guild) AddMember(UserID snowflake.ID, checkBans bool) error {
 	_ = checkBans // TODO: use this
 	c := DB.Core.C("guilds")
@@ -202,6 +222,28 @@ func (g *Guild) GetMember(UserID snowflake.ID) (*GuildMember, error) {
 		return nil, APIERR_UNKNOWN_MEMBER
 	}
 	return m, nil
+}
+
+func (g *Guild) ListMembers(limit int, after snowflake.ID) ([]*GuildMember, error) {
+	// TODO: this is super inefficient
+	if limit == 0 { limit = 1 }
+	x := make([]*GuildMember, 0, len(g.Members))
+	for _, v := range g.Members {
+		x = append(x, v)
+	}
+	sort.SliceStable(x, func(i, j int) bool { return x[i].UserID < x[j].UserID })
+	if after == 0 {
+		if limit > len(x) { limit = len(x) }
+		return x[:limit], nil
+	}
+	for k, v := range x {
+		if v.UserID == after {
+			x = x[k+1:]
+			if limit > len(x) { limit = len(x) }
+			return x[:limit], nil
+		}
+	}
+	return nil, fmt.Errorf("ListMembers: ?")
 }
 
 func (g *Guild) DelMember(UserID snowflake.ID) error {
@@ -288,10 +330,16 @@ func (g *Guild) DelRole(id snowflake.ID) error {
 	return nil
 }
 
-func (g *Guild) Save(flags ...bool /* membersOnly bool */) error {
+func (g *Guild) Save(flags ...bool /* membersOnly, featureList bool */) error {
 	c := DB.Core.C("guilds")
 	if len(flags) > 0 && flags[0] {
 		err := c.UpdateId(g.ID, bson.M{"$set": bson.M{"members": g.Members}})
+		if err != nil {
+			return err
+		}
+	}
+	if len(flags) > 0 && flags[1] {
+		err := c.UpdateId(g.ID, bson.M{"$set": bson.M{"features": g.Features}})
 		if err != nil {
 			return err
 		}
@@ -302,7 +350,7 @@ func (g *Guild) Save(flags ...bool /* membersOnly bool */) error {
 func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID, forCreateEvent bool */) *APITypeGuild {
 	var oUid snowflake.ID
 	var forCreateEvent = true
-	var perm = 0
+	var perm = PermSet(0)
 	if len(options) > 0 {
 		oUid = options[0].(snowflake.ID)
 		perm = g.GetPermissions(&User{ID: oUid}) // This is an awful hack
@@ -360,6 +408,7 @@ func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID, forCreateEv
 		gchs, err := g.Channels()
 		if err != nil {
 			// ????
+			// Is panic() reasonable?
 			panic("Unexpected error: can't access list of guild channels!")
 		}
 		for _, v := range gchs {
