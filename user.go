@@ -31,8 +31,8 @@ const (
 type UserSettings struct {
 	Locale     string `json:"locale"`
 	AfkTimeout int    `json:"afk_timeout"`
-	Theme string `json:"theme"`
-	Status string `json:"status"`
+	Theme      string `json:"theme"`
+	Status     string `json:"status"`
 	// TODO: the rest
 }
 

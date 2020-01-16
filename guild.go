@@ -1,9 +1,9 @@
 package main
 
 import (
-	"time"
-	"sort"
 	"fmt"
+	"sort"
+	"time"
 
 	"github.com/bwmarrin/snowflake"
 	"github.com/globalsign/mgo/bson"
@@ -226,20 +226,26 @@ func (g *Guild) GetMember(UserID snowflake.ID) (*GuildMember, error) {
 
 func (g *Guild) ListMembers(limit int, after snowflake.ID) ([]*GuildMember, error) {
 	// TODO: this is super inefficient
-	if limit == 0 { limit = 1 }
+	if limit == 0 {
+		limit = 1
+	}
 	x := make([]*GuildMember, 0, len(g.Members))
 	for _, v := range g.Members {
 		x = append(x, v)
 	}
 	sort.SliceStable(x, func(i, j int) bool { return x[i].UserID < x[j].UserID })
 	if after == 0 {
-		if limit > len(x) { limit = len(x) }
+		if limit > len(x) {
+			limit = len(x)
+		}
 		return x[:limit], nil
 	}
 	for k, v := range x {
 		if v.UserID == after {
 			x = x[k+1:]
-			if limit > len(x) { limit = len(x) }
+			if limit > len(x) {
+				limit = len(x)
+			}
 			return x[:limit], nil
 		}
 	}

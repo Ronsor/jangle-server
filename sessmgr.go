@@ -34,17 +34,17 @@ func InitSessionManager() {
 		}
 		switch evt["operationType"].(string) {
 		/*case "insert":
-			var g Guild
-			err := msDecodeBSON(dm, &g)
-			if err != nil {
-				return err
-			}
-			SessSub.TryPub(gwPacket{
-				Op:      GW_OP_DISPATCH,
-				Type:    GW_EVT_GUILD_CREATE,
-				Data:    g.ToAPI(g.OwnerID, true),
-				PvtData: &g,
-			}, g.OwnerID.String())*/
+		var g Guild
+		err := msDecodeBSON(dm, &g)
+		if err != nil {
+			return err
+		}
+		SessSub.TryPub(gwPacket{
+			Op:      GW_OP_DISPATCH,
+			Type:    GW_EVT_GUILD_CREATE,
+			Data:    g.ToAPI(g.OwnerID, true),
+			PvtData: &g,
+		}, g.OwnerID.String())*/
 		case "update":
 			g, err := GetGuildByID(snow)
 			if err != nil {
@@ -68,15 +68,15 @@ func InitSessionManager() {
 					pld.GuildID = g.ID
 					if gm.UserID != 0 { // Only set on first join
 						SessSub.TryPub(gwPacket{
-							Op: GW_OP_DISPATCH,
-							Type: GW_EVT_GUILD_MEMBER_ADD,
-							Data: pld,
+							Op:      GW_OP_DISPATCH,
+							Type:    GW_EVT_GUILD_MEMBER_ADD,
+							Data:    pld,
 							PvtData: gm,
 						}, g.ID.String())
 						SessSub.TryPub(gwPacket{
-							Op: GW_OP_DISPATCH,
-							Type: GW_EVT_GUILD_CREATE,
-							Data: g.ToAPI(gm.UserID, true),
+							Op:      GW_OP_DISPATCH,
+							Type:    GW_EVT_GUILD_CREATE,
+							Data:    g.ToAPI(gm.UserID, true),
 							PvtData: g,
 						}, gm.UserID.String())
 					}
@@ -126,11 +126,13 @@ func InitSessionManager() {
 				return err
 			}
 			tgt := snow.String()
-			if ch.IsGuild() { tgt = ch.GuildID.String() }
+			if ch.IsGuild() {
+				tgt = ch.GuildID.String()
+			}
 			SessSub.TryPub(gwPacket{
-				Op: GW_OP_DISPATCH,
-				Type: GW_EVT_CHANNEL_UPDATE,
-				Data: ch.ToAPI(),
+				Op:      GW_OP_DISPATCH,
+				Type:    GW_EVT_CHANNEL_UPDATE,
+				Data:    ch.ToAPI(),
 				PvtData: &ch,
 			}, tgt)
 		}

@@ -44,14 +44,16 @@ func InitRestGuild(r *router.Router) {
 			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_GUILD)
 			return
 		}
-                after, _ := snowflake.ParseBytes(c.FormValue("after"))
+		after, _ := snowflake.ParseBytes(c.FormValue("after"))
 		limit, _ := strconv.Atoi(string(c.FormValue("limit")))
 		mem, err := g.ListMembers(limit, after)
 		if err != nil {
 			panic(err)
 		}
 		o := []*APITypeGuildMember{}
-		for _, v := range mem { o = append(o, v.ToAPI()) }
+		for _, v := range mem {
+			o = append(o, v.ToAPI())
+		}
 		util.WriteJSON(c, o)
 	}, RL_GETINFO)))
 
@@ -71,9 +73,9 @@ func InitRestGuild(r *router.Router) {
 		util.WriteJSON(c, g.ToAPI(me.ID).Channels)
 	}, RL_GETINFO)))
 
-	type APIReqPatchGuildsGidChannels []struct{
-		ID snowflake.ID `json:"id,string"`
-		Position int `json:"position"`
+	type APIReqPatchGuildsGidChannels []struct {
+		ID       snowflake.ID `json:"id,string"`
+		Position int          `json:"position"`
 	}
 
 	r.PATCH("/api/v6/guilds/:gid/channels", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
@@ -207,14 +209,14 @@ func InitRestGuild(r *router.Router) {
 	}, RL_NEWOBJ)))
 
 	type APIReqPostGuilds struct {
-		Name string `json:"name" validate:"min=2,max=100"`
-		Region string `json:"region,omitempty"` // Ignored
-		Icon string `json:"icon,omitempty" validate:"omitempty,datauri"`
-		VerificationLevel int `json:"verification_level,omitempty"`
-		DefaultMessageNotifications int `json:"default_message_notifications,omitempty" validate:"min=0,max=1"`
-		ExplicitContentFilter int `json:"explicit_content_filter" validate:"min=0,max=0"`
-		Roles []*APITypeRole `json:"roles,omitempty"` // Ignored
-		Channels []APITypeAnyChannel `json:"channels,omitempty"` // Ignored
+		Name                        string              `json:"name" validate:"min=2,max=100"`
+		Region                      string              `json:"region,omitempty"` // Ignored
+		Icon                        string              `json:"icon,omitempty" validate:"omitempty,datauri"`
+		VerificationLevel           int                 `json:"verification_level,omitempty"`
+		DefaultMessageNotifications int                 `json:"default_message_notifications,omitempty" validate:"min=0,max=1"`
+		ExplicitContentFilter       int                 `json:"explicit_content_filter" validate:"min=0,max=0"`
+		Roles                       []*APITypeRole      `json:"roles,omitempty"`    // Ignored
+		Channels                    []APITypeAnyChannel `json:"channels,omitempty"` // Ignored
 	}
 
 	r.POST("/api/v6/guilds", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {

@@ -105,11 +105,21 @@ func InitRestChannel(r *router.Router) {
 			return
 		}
 
-		if req.Name != nil { ch.Name = *req.Name }
-		if req.Position != nil { ch.Position = *req.Position }
-		if req.Topic != nil { ch.Topic = *req.Topic }
-		if req.NSFW != nil { ch.NSFW = *req.NSFW }
-		if req.RateLimitPerUser != nil { ch.RateLimitPerUser = *req.RateLimitPerUser }
+		if req.Name != nil {
+			ch.Name = *req.Name
+		}
+		if req.Position != nil {
+			ch.Position = *req.Position
+		}
+		if req.Topic != nil {
+			ch.Topic = *req.Topic
+		}
+		if req.NSFW != nil {
+			ch.NSFW = *req.NSFW
+		}
+		if req.RateLimitPerUser != nil {
+			ch.RateLimitPerUser = *req.RateLimitPerUser
+		}
 		if req.ParentID != nil {
 			pid := *req.ParentID
 			pch, err := GetChannelByID(pid)
