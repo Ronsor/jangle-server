@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"jangled/util"
+	jwt "jangled/sjwt"
 
 	"github.com/bwmarrin/snowflake"
 	"github.com/globalsign/mgo/bson"
@@ -61,6 +63,7 @@ type User struct {
 
 	Presence       *gwPktDataUpdateStatus        `bson:"presence"`
 	LastMessageIDs map[snowflake.ID]snowflake.ID `bson:"read_last_message_ids"`
+	JwtSecret string `bson:"jwt_secret"`
 }
 
 // GetUserByID returns a user by their unique ID
@@ -76,6 +79,7 @@ func GetUserByID(ID snowflake.ID) (u *User, e error) {
 // GetUserByToken returns a user using an authentication token
 func GetUserByToken(token string) (*User, error) {
 	if *flgStaging {
+		// TODO: snowflake.ParseString
 		var i snowflake.ID
 		n, err := fmt.Sscanf(token, "%d", &i)
 		if n != 1 {
@@ -85,8 +89,32 @@ func GetUserByToken(token string) (*User, error) {
 			return nil, err
 		}
 		return GetUserByID(i)
+	} else {
+		claims, err := jwt.Parse(token)
+		if err != nil {
+			return nil, err
+		}
+		if err := claims.Validate(); err != nil {
+			return nil, err
+		}
+		subj, err := claims.GetSubject()
+		if err != nil {
+			return nil, err
+		}
+		uid, err := snowflake.ParseString(subj)
+		if err != nil {
+			return nil, err
+		}
+		user, err := GetUserByID(uid)
+		if err != nil {
+			return nil, err
+		}
+		if !jwt.Verify(token, user.GetTokenSecret()) {
+			return nil, fmt.Errorf("Invalid token")
+		}
+		return user, nil
 	}
-	return nil, fmt.Errorf("Not implemented") // TODO: implement actual auth
+	return nil, fmt.Errorf("Not implemented")
 }
 
 // GetUserByHttpRequest returns a user using a fasthttp.RequestCtx.
@@ -116,6 +144,20 @@ func GetUserByHttpRequest(c *fasthttp.RequestCtx, ctxvar string) (*User, error) 
 		}
 	}
 	return user, nil
+}
+
+func (u *User) GetTokenSecret() []byte {
+	return []byte(u.PasswordHash + u.JwtSecret)
+}
+
+func (u *User) IssueToken(duration time.Duration) string {
+	c := jwt.New()
+	c.SetSubject(u.ID.String())
+	c.Set("tag", u.Username + "#" + u.Discriminator)
+	c.SetIssuedAt(time.Now())
+	c.SetExpiresAt(time.Now().Add(duration))
+	c.SetTokenID()
+	return c.Generate(u.GetTokenSecret())
 }
 
 // ToAPI returns a version of the User struct that can be returned by API calls
