@@ -109,6 +109,43 @@ func InitRestGuild(r *router.Router) {
 		util.WriteJSON(c, p.ToAPI())
 	}, RL_GETINFO)))
 
+	type APIReqPutGuildsGidMembersUid struct {
+		// TODO: accept arguments here
+	}
+
+	r.PUT("/api/v6/guilds/:gid/members/:uid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		gid := c.UserValue("gid").(string)
+		snow, err := snowflake.ParseString(gid)
+		if err != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+		g, err := GetGuildByID(snow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_GUILD)
+			return
+		}
+		if !g.HasFeature(GUILD_FEATURE_DISCOVERABLE) {
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
+			return
+		}
+		if _, err := g.GetMember(me.ID); err != nil {
+			c.SetStatusCode(204)
+			return
+		}
+		err = g.AddMember(me.ID, true)
+		if err != nil {
+			panic(err)
+		}
+		mem, err := g.GetMember(me.ID)
+		if err != nil {
+			panic(err)
+		}
+		c.SetStatusCode(201)
+		util.WriteJSON(c, mem.ToAPI())
+	}, RL_NEWOBJ), "uid"))
+
 	r.GET("/api/v6/guilds/:gid/channels", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		gid := c.UserValue("gid").(string)
