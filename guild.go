@@ -182,6 +182,25 @@ func GetGuildsByUserID(UserID snowflake.ID) ([]*Guild, error) {
 	return g2, nil
 }
 
+func (g *Guild) Delete() error {
+	chs, err := g.Channels()
+	if err != nil {
+		return err
+	}
+	for _, v := range chs {
+		err := v.Delete()
+		if err != nil {
+			return err
+		}
+	}
+	c := DB.Core.C("guilds")
+	err = c.RemoveId(g.ID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (g *Guild) AddFeature(feat string) error {
 	for _, v := range g.Features {
 		if v == feat {

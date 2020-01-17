@@ -30,6 +30,32 @@ func InitRestGuild(r *router.Router) {
 		util.WriteJSON(c, g.ToAPI(me.ID, false))
 	}, RL_GETINFO)))
 
+	r.DELETE("/api/v6/guilds/:gid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		gid := c.UserValue("gid").(string)
+		snow, err := snowflake.ParseString(gid)
+		if err != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+		g, err := GetGuildByID(snow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_GUILD)
+			return
+		}
+
+		if g.OwnerID != me.ID {
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
+			return
+		}
+
+		err = g.Delete()
+		if err != nil {
+			panic(err)
+		}
+		c.SetStatusCode(204)
+	}, RL_DELOBJ)))
+
 	r.GET("/api/v6/guilds/:gid/members", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		//me := c.UserValue("m:user").(*User)
 		//TODO: check if user is in guild
@@ -55,6 +81,32 @@ func InitRestGuild(r *router.Router) {
 			o = append(o, v.ToAPI())
 		}
 		util.WriteJSON(c, o)
+	}, RL_GETINFO)))
+
+	r.GET("/api/v6/guilds/:gid/members/:uid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		gid := c.UserValue("gid").(string)
+		uid := c.UserValue("uid").(string)
+		usnow, err := snowflake.ParseString(uid)
+		if err != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+		snow, err := snowflake.ParseString(gid)
+		if err != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+		g, err := GetGuildByID(snow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_GUILD)
+			return
+		}
+		p, err := g.GetMember(usnow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_MEMBER)
+			return
+		}
+		util.WriteJSON(c, p.ToAPI())
 	}, RL_GETINFO)))
 
 	r.GET("/api/v6/guilds/:gid/channels", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
