@@ -18,6 +18,7 @@ func InitDB() {
 		log.Fatal(err)
 	}
 	// TODO: separate DB server for messages, and files
+	sess.SetSafe(nil)
 	DB.Msg = sess.DB("")
 	DB.Core = sess.DB("")
 	DB.Files = sess.DB("")

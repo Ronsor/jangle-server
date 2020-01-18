@@ -471,6 +471,7 @@ func InitGuildStaging() {
 			"42": &GuildMember{UserID: 42, Roles: []snowflake.ID{84}},
 			"43": &GuildMember{UserID: 43, Roles: []snowflake.ID{84}},
 		},
+		Features: []string{GUILD_FEATURE_DISCOVERABLE},
 	})
 	chans := DB.Core.C("channels")
 	chans.Insert(&Channel{

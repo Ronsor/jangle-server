@@ -82,6 +82,15 @@ func InitSessionManager() {
 					}
 				}
 			}
+		case "delete":
+			SessSub.TryPub(gwPacket{
+				Op: GW_OP_DISPATCH,
+				Type: GW_EVT_GUILD_DELETE,
+				Data: bson.M{
+					"id": snow.String(),
+					"unavailable": true,
+				},
+			}, snow.String())
 		}
 		return nil
 	})
@@ -129,11 +138,20 @@ func InitSessionManager() {
 			if ch.IsGuild() {
 				tgt = ch.GuildID.String()
 			}
+			if ch.Deleted {
+				SessSub.TryPub(gwPacket{
+					Op: GW_OP_DISPATCH,
+					Type: GW_EVT_CHANNEL_DELETE,
+					Data: ch.ToAPI(),
+					PvtData: ch,
+				}, tgt)
+				return DB.Core.C("channels").RemoveId(ch.ID)
+			}
 			SessSub.TryPub(gwPacket{
 				Op:      GW_OP_DISPATCH,
 				Type:    GW_EVT_CHANNEL_UPDATE,
 				Data:    ch.ToAPI(),
-				PvtData: &ch,
+				PvtData: ch,
 			}, tgt)
 		}
 		return nil

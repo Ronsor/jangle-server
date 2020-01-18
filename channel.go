@@ -157,7 +157,7 @@ func (c *Channel) Delete() error {
 	if !c.IsGuild() {
 		return nil // We don't actually let you delete DM channels
 	}
-	chcol := DB.Core.C("channels")
+	//chcol := DB.Core.C("channels")
 	if c.Type == CHTYPE_GUILD_TEXT {
 		msgcol := DB.Msg.C("msgs")
 		err := msgcol.Remove(bson.M{"channel_id": c.ID})
@@ -178,7 +178,13 @@ func (c *Channel) Delete() error {
 			v.Save()
 		}
 	}
-	err := chcol.RemoveId(c.ID)
+
+	c.Deleted = true
+	err := c.Save()
+	if err != nil {
+		return err
+	}
+	//err = chcol.RemoveId(c.ID)
 	// Goodbye!
 	return err
 }

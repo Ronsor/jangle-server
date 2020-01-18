@@ -175,10 +175,19 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 					if ch.GetPermissions(sess.User).Has(PERM_VIEW_CHANNEL) {
 						SessSub.AddSub(sess.EvtChan, ch.ID.String())
 					}
+				case GW_EVT_CHANNEL_UPDATE:
+					ch := pkt.PvtData.(*Channel)
+					if !ch.GetPermissions(sess.User).Has(PERM_VIEW_CHANNEL) {
+						go SessSub.Unsub(sess.EvtChan, ch.ID.String())
+					}
+				case GW_EVT_GUILD_UPDATE:
+					// TODO
 				case GW_EVT_CHANNEL_DELETE:
 					go SessSub.Unsub(sess.EvtChan, pkt.PvtData.(*Channel).ID.String())
 				case GW_EVT_GUILD_CREATE:
 					SessSub.AddSub(sess.EvtChan, pkt.PvtData.(*Guild).ID.String())
+				case GW_EVT_GUILD_DELETE:
+					go SessSub.Unsub(sess.EvtChan, pkt.PvtData.(*Guild).ID.String())
 				}
 			}
 			pkt.Seq = sess.Seq
