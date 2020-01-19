@@ -72,7 +72,7 @@ func InitRestGuild(r *router.Router) {
 		}
 		after, _ := snowflake.ParseBytes(c.FormValue("after"))
 		limit, _ := strconv.Atoi(string(c.FormValue("limit")))
-		mem, err := g.ListMembers(limit, after)
+		mem, err := g.Members(limit, after)
 		if err != nil {
 			panic(err)
 		}
@@ -145,6 +145,49 @@ func InitRestGuild(r *router.Router) {
 		c.SetStatusCode(201)
 		util.WriteJSON(c, mem.ToAPI())
 	}, RL_NEWOBJ), "uid"))
+
+	type APIReqPatchGuildsGidMembersMeNick struct {
+		Nick string `json:"nick" validate:"min=0,max=32"`
+	}
+
+	r.PATCH("/api/v6/guilds/:gid/members/:uid/nick", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+
+		var req APIReqPatchGuildsGidMembersMeNick
+		if util.ReadPostJSON(c, &req) != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+
+		gid := c.UserValue("gid").(string)
+		snow, err := snowflake.ParseString(gid)
+		if err != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+
+		g, err := GetGuildByID(snow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_GUILD)
+			return
+		}
+		if !g.GetPermissions(me).Has(PERM_CHANGE_NICKNAME) {
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
+			return
+		}
+
+		mem, err := g.GetMember(me.ID)
+		if err != nil {
+			panic(err)
+		}
+		mem.Nick = req.Nick
+		err = g.SetMember(mem)
+		if err != nil {
+			panic(err)
+		}
+
+		util.WriteJSON(c, req)
+	}, RL_SETINFO), "uid"))
 
 	r.GET("/api/v6/guilds/:gid/channels", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)

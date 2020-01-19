@@ -3,8 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
-	"strings"
-	//	"time"
+	//"time"
 
 	"github.com/bwmarrin/snowflake"
 	"github.com/cskr/pubsub"
@@ -24,6 +23,42 @@ func msDecodeBSON(in, out interface{}) error {
 }
 
 func InitSessionManager() {
+	go RunSessionManager(DB.Core.Session, "guildmembers", func(dm bson.M, evt bson.M) error {
+		log.Println(evt)
+		id := fmt.Sprintf("%v", evt["documentKey"].(bson.M)["_id"])
+		snow, err := snowflake.ParseString(id)
+		_ = snow
+		if err != nil {
+			return err
+		}
+		switch evt["operationType"].(string) {
+		case "insert":
+			var gm GuildMember
+			err := msDecodeBSON(dm, &gm)
+			if err != nil {
+				return err
+			}
+			g, err := GetGuildByID(gm.GuildID)
+			if err != nil {
+				return err
+			}
+			pld := gm.ToAPI()
+			pld.GuildID = gm.GuildID
+			SessSub.TryPub(gwPacket{
+				Op:      GW_OP_DISPATCH,
+				Type:    GW_EVT_GUILD_MEMBER_ADD,
+				Data:    pld,
+				PvtData: gm,
+			}, g.ID.String())
+			SessSub.TryPub(gwPacket{
+				Op:      GW_OP_DISPATCH,
+				Type:    GW_EVT_GUILD_CREATE,
+				Data:    g.ToAPI(gm.UserID, true),
+				PvtData: g,
+			}, gm.UserID.String())
+		}
+		return nil
+	})
 	go RunSessionManager(DB.Core.Session, "guilds", func(dm bson.M, evt bson.M) error {
 		log.Println(evt)
 		id := fmt.Sprintf("%v", evt["documentKey"].(bson.M)["_id"])
@@ -52,36 +87,8 @@ func InitSessionManager() {
 			}
 
 			uf := evt["updateDescription"].(bson.M)["updatedFields"].(bson.M)
-			for k, v := range uf {
-				if strings.HasPrefix(k, "members.") {
-					var gm *GuildMember
-					err := msDecodeBSON(v, &gm)
-					if err != nil {
-						return err
-					}
-					trueid, err := snowflake.ParseString(k[len("members."):])
-					if err != nil {
-						_ = trueid
-						return err
-					}
-					pld := gm.ToAPI()
-					pld.GuildID = g.ID
-					if gm.UserID != 0 { // Only set on first join
-						SessSub.TryPub(gwPacket{
-							Op:      GW_OP_DISPATCH,
-							Type:    GW_EVT_GUILD_MEMBER_ADD,
-							Data:    pld,
-							PvtData: gm,
-						}, g.ID.String())
-						SessSub.TryPub(gwPacket{
-							Op:      GW_OP_DISPATCH,
-							Type:    GW_EVT_GUILD_CREATE,
-							Data:    g.ToAPI(gm.UserID, true),
-							PvtData: g,
-						}, gm.UserID.String())
-					}
-				}
-			}
+			_ = uf
+			_ = g
 		case "delete":
 			SessSub.TryPub(gwPacket{
 				Op: GW_OP_DISPATCH,

@@ -34,7 +34,7 @@ bot.on("presence", function(user, userID, status, game, event) {
 });
 
 bot.on("any", function(event) {
-	/*console.log(rawEvent)*/ //Logs every event
+	//console.log(event); //Logs every event
 });
 
 bot.on("disconnect", function(x) {
