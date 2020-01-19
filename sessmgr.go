@@ -48,7 +48,7 @@ func InitSessionManager() {
 				Op:      GW_OP_DISPATCH,
 				Type:    GW_EVT_GUILD_MEMBER_ADD,
 				Data:    pld,
-				PvtData: gm,
+				PvtData: &gm,
 			}, g.ID.String())
 			SessSub.TryPub(gwPacket{
 				Op:      GW_OP_DISPATCH,
@@ -56,6 +56,33 @@ func InitSessionManager() {
 				Data:    g.ToAPI(gm.UserID, true),
 				PvtData: g,
 			}, gm.UserID.String())
+		case "replace":
+			var gm GuildMember
+			err := msDecodeBSON(dm, &gm)
+			if err != nil {
+				return err
+			}
+			pld := gm.ToAPI()
+			pld.GuildID = gm.GuildID
+			SessSub.TryPub(gwPacket{
+				Op: GW_OP_DISPATCH,
+				Type: GW_EVT_GUILD_MEMBER_UPDATE,
+				Data: pld,
+				PvtData: &gm,
+			}, gm.GuildID.String())
+		case "update":
+			gm, err := GetGuildMemberByID(snow)
+			if err != nil {
+				return err
+			}
+			pld := gm.ToAPI()
+			pld.GuildID = gm.GuildID
+			SessSub.TryPub(gwPacket{
+				Op: GW_OP_DISPATCH,
+				Type: GW_EVT_GUILD_MEMBER_UPDATE,
+				Data: pld,
+				PvtData: gm,
+			}, gm.GuildID.String())
 		}
 		return nil
 	})

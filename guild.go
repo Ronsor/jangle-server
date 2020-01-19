@@ -46,6 +46,14 @@ type GuildMember struct {
 	Mute         bool           `bson:"mute"`
 }
 
+func GetGuildMemberByID(id snowflake.ID) (*GuildMember, error) {
+	var gm GuildMember
+	c := DB.Core.C("guildmembers")
+	err := c.Find(bson.M{"_id": id}).One(&gm)
+	if err != nil { return nil, err }
+	return &gm, nil
+}
+
 func (gm *GuildMember) AddRole(id snowflake.ID) {
 	for _, v := range gm.Roles {
 		if v == id {
