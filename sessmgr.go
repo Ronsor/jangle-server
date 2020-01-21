@@ -83,6 +83,8 @@ func InitSessionManager() {
 				Data: pld,
 				PvtData: gm,
 			}, gm.GuildID.String())
+		case "delete":
+			// TODO: how to get guild_id, user obj
 		}
 		return nil
 	})
@@ -172,14 +174,14 @@ func InitSessionManager() {
 			if ch.IsGuild() {
 				tgt = ch.GuildID.String()
 			}
-			if ch.Deleted {
+			if ch.Deleted != nil {
 				SessSub.TryPub(gwPacket{
 					Op: GW_OP_DISPATCH,
 					Type: GW_EVT_CHANNEL_DELETE,
 					Data: ch.ToAPI(),
 					PvtData: ch,
 				}, tgt)
-				return DB.Core.C("channels").RemoveId(ch.ID)
+				return nil
 			}
 			SessSub.TryPub(gwPacket{
 				Op:      GW_OP_DISPATCH,

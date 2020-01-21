@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/bwmarrin/snowflake"
 	"github.com/globalsign/mgo/bson"
@@ -55,7 +56,7 @@ type Channel struct {
 	Bitrate   int `bson:"bitrate"`
 	UserLimit int `bson:"user_limit"`
 
-	Deleted bool `bson:"deleted"`
+	Deleted *time.Time `bson:"deleted,omitempty"`
 }
 
 func CreateDMChannel(party1, party2 snowflake.ID) (*Channel, error) {
@@ -179,7 +180,8 @@ func (c *Channel) Delete() error {
 		}
 	}
 
-	c.Deleted = true
+	t := time.Now()
+	c.Deleted = &t
 	err := c.Save()
 	if err != nil {
 		return err

@@ -90,4 +90,30 @@ func InitRestUser(r *router.Router) {
 		}
 		util.WriteJSON(c, out)
 	}, RL_GETINFO), "uid"))
+
+	r.DELETE("/api/v6/users/:uid/guilds/:gid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		gid := c.UserValue("gid").(string)
+		snow, err := snowflake.ParseString(gid)
+		if err != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+		g, err := GetGuildByID(snow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_GUILD)
+			return
+		}
+		// I have no idea what Discord's behavior is on this?
+		// Delete the server or return an error?
+		if g.OwnerID == me.ID {
+			panic("I don't know what to do here")
+		}
+
+		err = g.DelMember(me.ID)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_MEMBER)
+		}
+
+	}, RL_DELOBJ), "uid"))
 }

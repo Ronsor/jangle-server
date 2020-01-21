@@ -298,7 +298,7 @@ func (g *Guild) DelMember(UserID snowflake.ID) error {
 }
 
 func (g *Guild) GetPermissions(u *User) PermSet {
-	if g.OwnerID == u.ID {
+	if g.OwnerID == u.ID || u.Flags & USER_FLAG_STAFF != 0 {
 		return PERM_EVERYTHING // PERM_ADMINISTRATOR?
 	}
 	mem, err := g.GetMember(u.ID)
