@@ -64,6 +64,6 @@ func main() {
 	log.Printf("info: initialized gateway routes")
 
 	log.Printf("info: starting http server (addr=%s)", *flgListen)
-	log.Fatal(fasthttp.ListenAndServe(*flgListen, r.Handler))
+	log.Fatal(fasthttp.ListenAndServe(*flgListen, MwAccCtl(r.Handler, "*")))
 	log.Println("info:", "shutting down...")
 }
