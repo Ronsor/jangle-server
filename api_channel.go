@@ -165,7 +165,6 @@ func InitRestChannel(r *router.Router) {
 		me := c.UserValue("m:user").(*User)
 		var req APIReqPostChannelsCidMessages
 		cid := c.UserValue("cid").(string)
-		ct := string(c.Request.Header.Peek("Content-Type"))
 		if util.ReadPostAny(c, &req) != nil {
 			util.WriteJSONStatus(c, 400, &APIResponseError{0, "Malformed request body"})
 			return
