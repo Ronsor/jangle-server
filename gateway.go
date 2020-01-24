@@ -33,21 +33,26 @@ func InitGateway(r *router.Router) {
 
 	r.GET("/gateway_ws6/", MwRl(func(c *fasthttp.RequestCtx) {
 		if string(c.FormValue("v")) != "6" {
+			log.Println("Client attempted to use old API version. We don't support ETF or msgpack yet.")
 			util.WriteJSONStatus(c, 400, &responseError{Code: 50041, Message: "We only support version 6 here"})
 			return
 		}
 		if string(c.FormValue("encoding")) != "json" {
+			log.Println("Client attempted to use non-JSON encoding. We don't support ETF or msgpack yet.")
 			util.WriteJSONStatus(c, 400, &responseError{Code: 0, Message: "Sorry we don't support etf or msgpack yet"})
 			return
 		}
-		err := (&websocket.FastHTTPUpgrader{ReadBufferSize: 4096, WriteBufferSize: 4096}).Upgrade(c, func(n *websocket.Conn) { InitGatewaySession(n, c) })
+		err := (&websocket.FastHTTPUpgrader{ReadBufferSize: 4096, WriteBufferSize: 4096,
+				CheckOrigin: func(_ *fasthttp.RequestCtx) bool { return true }}).Upgrade(c, func(n *websocket.Conn) { InitGatewaySession(n, c) })
 		if err != nil {
+			log.Println("Client socket initialization failed:", err)
 			util.WriteJSONStatus(c, 400, &responseError{Code: 0, Message: "WebSocket initialization failure"})
 		}
 	}, RL_NEWOBJ))
 }
 
 func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
+	defer util.TryRecover()
 	defer ws.Close()
 	var sess = &gwSession{}
 	var codec util.Codec

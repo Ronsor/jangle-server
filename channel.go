@@ -151,7 +151,7 @@ func (c *Channel) Messages(around, before, after snowflake.ID, limit int, extra 
 }
 
 func (c *Channel) IsGuild() bool {
-	return c.Type == CHTYPE_GUILD_TEXT // TODO: the other types
+	return c.Type == CHTYPE_GUILD_TEXT || c.Type == CHTYPE_GUILD_CATEGORY // TODO VOICE: the other types
 }
 
 func (c *Channel) Delete() error {
@@ -161,7 +161,7 @@ func (c *Channel) Delete() error {
 	//chcol := DB.Core.C("channels")
 	if c.Type == CHTYPE_GUILD_TEXT {
 		msgcol := DB.Msg.C("msgs")
-		err := msgcol.Remove(bson.M{"channel_id": c.ID})
+		_, err := msgcol.RemoveAll(bson.M{"channel_id": c.ID})
 		if err != nil {
 			return err
 		}

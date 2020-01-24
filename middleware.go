@@ -32,7 +32,11 @@ var (
 func MwAccCtl(orig func(c *fasthttp.RequestCtx), allow string) func(c *fasthttp.RequestCtx) {
 	return func(c *fasthttp.RequestCtx) {
 		rh := &c.Response.Header
-		rh.Set("Access-Control-Allow-Origin", "*")
+		if o := string(c.Request.Header.Peek("Origin")); o != "" {
+			rh.Set("Access-Control-Allow-Origin", o)
+		} else {
+			rh.Set("Access-Control-Allow-Origin", "*")
+		}
 		rh.Set("Access-Control-Allow-Credentials", "true")
 		rh.Set("Access-Control-Allow-Methods", "POST, GET, PUT, PATCH, DELETE, OPTIONS")
 		rh.Set("Access-Control-Expose-Headers", "*")

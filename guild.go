@@ -207,6 +207,11 @@ func (g *Guild) Delete() error {
 			return err
 		}
 	}
+	gmc := DB.Core.C("guildmembers")
+	_, err = gmc.RemoveAll(bson.M{"guild_id":g.ID})
+	if err != nil {
+		return err
+	}
 	c := DB.Core.C("guilds")
 	err = c.RemoveId(g.ID)
 	if err != nil {
@@ -358,7 +363,7 @@ func (g *Guild) DelRole(id snowflake.ID) error {
 	// probably not the best idea, but the fastest way to remove a dead role
 	// alternatively drop it on next update, but meh
 	gmc := DB.Core.C("guildmembers")
-	err := gmc.Update(bson.M{"guild_id": g.ID}, bson.M{"$pull": bson.M{"roles": id}})
+	_, err := gmc.UpdateAll(bson.M{"guild_id": g.ID}, bson.M{"$pull": bson.M{"roles": id}})
 	if err != nil {
 		return err
 	}
