@@ -109,6 +109,31 @@ func InitRestGuild(r *router.Router) {
 		util.WriteJSON(c, p.ToAPI())
 	}, RL_GETINFO)))
 
+	r.DELETE("/api/v6/guilds/:gid/members/:uid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		gid := c.UserValue("gid").(string)
+		snow, err := snowflake.ParseString(gid)
+		if err != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+
+		g, err := GetGuildByID(snow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_GUILD)
+			return
+		}
+		if !g.GetPermissions(me).Has(PERM_KICK_MEMBERS) {
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
+			return
+		}
+
+		err = g.DelMember(snow)
+
+		if err != nil { panic(err) }
+		c.SetStatusCode(204)
+	}, RL_DELOBJ)))
+
 	type APIReqPutGuildsGidMembersUid struct {
 		// TODO: accept arguments here
 	}
