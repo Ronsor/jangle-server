@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"time"
+	"math/rand"
 
 	"jangled/util"
 	jwt "jangled/sjwt"
@@ -18,6 +19,8 @@ const (
 	USER_FLAG_STAFF        = 1 << 0
 	USER_FLAG_PARTNER      = 1 << 1
 	USER_FLAG_EARLYADOPTER = 1 << 24
+
+	USER_FLAG_UNVERIFIED = 1 << 25
 	// The rest are unused
 )
 
@@ -64,6 +67,34 @@ type User struct {
 	Presence       *gwPktDataUpdateStatus        `bson:"presence"`
 	LastMessageIDs map[snowflake.ID]snowflake.ID `bson:"read_last_message_ids"`
 	JwtSecret string `bson:"jwt_secret"`
+}
+
+// CreateUser creates a user
+func CreateUser(username, email, password string) (*User, error) {
+	c := DB.Core.C("users")
+
+	usr := &User{
+		ID: flake.Generate(),
+		Username: username,
+		Email: email,
+		PasswordHash: util.CryptPass(password),
+		Flags: USER_FLAG_UNVERIFIED,
+		Settings: &UserSettings{
+			Locale: "en-US",
+		},
+	}
+
+	dint := 1 + rand.Intn(9998)
+
+	var err error
+	for tries := 0; tries < 100; tries++ {
+		usr.Discriminator = fmt.Sprintf("%04d", dint)
+		err = c.Insert(usr)
+		if err == nil { break }
+	}
+
+	if err != nil { return nil, err }
+	return usr, nil
 }
 
 // GetUserByID returns a user by their unique ID

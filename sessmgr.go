@@ -5,6 +5,8 @@ import (
 	"log"
 	//"time"
 
+	"jangled/util"
+
 	"github.com/bwmarrin/snowflake"
 	"github.com/cskr/pubsub"
 	"github.com/globalsign/mgo"
@@ -23,6 +25,77 @@ func msDecodeBSON(in, out interface{}) error {
 }
 
 func InitSessionManager() {
+	go RunSessionManager(DB.Core.Session, "presence", func (dm bson.M, evt bson.M) error {
+		log.Println(evt)
+		id := fmt.Sprintf("%v", evt["documentKey"].(bson.M)["_id"])
+		snow, err := snowflake.ParseString(id)
+		_ = snow
+		if err != nil {
+			return err
+		}
+		switch evt["operationType"].(string) {
+		case "insert":
+			var pkt gwPktDataUpdateStatus
+			err := msDecodeBSON(dm, &pkt)
+			if err != nil {
+				return err
+			}
+			gms, err := GetGuildMembersByUserID(snow)
+			if err != nil {
+				return err
+			}
+			usr, err := GetUserByID(snow)
+			if err != nil {
+				return err
+			}
+			usrapi := usr.ToAPI(true) // just cache it
+			for _, v := range gms {
+				SessSub.TryPub(gwPacket{
+					Op: GW_OP_DISPATCH,
+					Type: GW_EVT_PRESENCE_UPDATE,
+					Data: &gwEvtDataPresenceUpdate{
+						User: usrapi,
+						Roles: v.Roles,
+						GuildID: v.GuildID,
+						Status: pkt.Status,
+						Nick: v.Nick,
+					},
+				}, v.GuildID.String())
+			}
+		case "update":
+			uf := evt["updateDescription"].(bson.M)["updatedFields"].(bson.M)
+			if _, ok := uf["timestamp"]; ok && len(uf) == 1 {
+				return nil
+			}
+			pkt, err := GetPresenceForUser(snow)
+			if err != nil {
+				return err
+			}
+			gms, err := GetGuildMembersByUserID(snow)
+			if err != nil {
+				return err
+			}
+			usr, err := GetUserByID(snow)
+			if err != nil {
+				return err
+			}
+			usrapi := usr.ToAPI(true) // just cache it
+			for _, v := range gms {
+				SessSub.TryPub(gwPacket{
+					Op: GW_OP_DISPATCH,
+					Type: GW_EVT_PRESENCE_UPDATE,
+					Data: &gwEvtDataPresenceUpdate{
+						User: usrapi,
+						Roles: v.Roles,
+						GuildID: v.GuildID,
+						Status: pkt.Status,
+						Nick: v.Nick,
+					},
+				}, v.GuildID.String())
+			}
+		}
+		return nil
+	})
 	go RunSessionManager(DB.Core.Session, "guildmembers", func(dm bson.M, evt bson.M) error {
 		log.Println(evt)
 		id := fmt.Sprintf("%v", evt["documentKey"].(bson.M)["_id"])
@@ -75,6 +148,30 @@ func InitSessionManager() {
 			if err != nil {
 				return err
 			}
+			if gm.Deleted != nil {
+				usr, err := GetUserByID(gm.ID)
+				if err != nil {
+					return err
+				}
+				SessSub.TryPub(gwPacket{
+					Op: GW_OP_DISPATCH,
+					Type: GW_EVT_GUILD_DELETE,
+					Data: bson.M{
+						"id": gm.GuildID.String(),
+						"unavailable": true,
+					},
+				}, gm.UserID.String())
+
+				SessSub.TryPub(gwPacket{
+					Op: GW_OP_DISPATCH,
+					Type: GW_EVT_GUILD_MEMBER_REMOVE,
+					Data: bson.M{
+						"guild_id": gm.GuildID.String(),
+						"user": usr.ToAPI(true),
+					},
+				}, gm.GuildID.String())
+				return nil
+			}
 			pld := gm.ToAPI()
 			pld.GuildID = gm.GuildID
 			SessSub.TryPub(gwPacket{
@@ -83,8 +180,6 @@ func InitSessionManager() {
 				Data: pld,
 				PvtData: gm,
 			}, gm.GuildID.String())
-		case "delete":
-			// TODO: how to get guild_id, user obj
 		}
 		return nil
 	})
@@ -196,6 +291,7 @@ func InitSessionManager() {
 		log.Println(evt)
 		id := fmt.Sprintf("%v", evt["documentKey"].(bson.M)["_id"])
 		snow, err := snowflake.ParseString(id)
+		_ = snow
 		if err != nil {
 			return err
 		}
@@ -284,10 +380,13 @@ func RunSessionManager(sess *mgo.Session, col string, fn func(doc bson.M, evt bs
 			if !ok {
 				dm = nil
 			}
-			err := fn(dm, doc)
-			if err != nil {
-				log.Println("SessionManager: "+col+": error:", err)
-			}
+			(func() {
+				defer util.TryRecover()
+				err := fn(dm, doc)
+				if err != nil {
+					log.Println("SessionManager: "+col+": error:", err)
+				}
+			})()
 		}
 		if err := cstream.Close(); err != nil {
 			log.Println("SessionManager:", err)
