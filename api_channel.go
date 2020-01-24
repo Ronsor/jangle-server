@@ -5,6 +5,7 @@ import (
 	"log"
 	"strconv"
 	"time"
+	"mime/multipart"
 
 	"jangled/util"
 
@@ -150,28 +151,24 @@ func InitRestChannel(r *router.Router) {
 	r.PUT("/api/v6/channels/:cid", APIReqPutPatchChannelsCidFn)
 
 	type APIReqPostChannelsCidMessages struct {
-		Content     string        `json:"content" validate:"required_without=Embed"`
-		Nonce       interface{}   `json:"nonce"`
+		Content     string        `json:"content" validate:"required_without_all=Embed File,max=3072"`
+		Nonce       interface{}   `json:"nonce" validate:"max=32"`
 		TTS         bool          `json:"tts"`
 		Embed       *MessageEmbed `json:"embed"`
 		PayloadJson string        `json:"payload_json"`
+		File *multipart.FileHeader `json:"file"`
 	}
 
 	// Why is this so convoluted Discord? multipart/form-data, application/json, "payload_json"????
 	r.POST("/api/v6/channels/:cid/messages", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		defer c.Request.RemoveMultipartFormFiles()
 		me := c.UserValue("m:user").(*User)
 		var req APIReqPostChannelsCidMessages
 		cid := c.UserValue("cid").(string)
 		ct := string(c.Request.Header.Peek("Content-Type"))
-		if ct == "multipart/form-data" {
-			// TODO: something
-			// This is gonna be horrible to implement
-			panic("TODO")
-		} else {
-			if util.ReadPostJSON(c, &req) != nil {
-				util.WriteJSONStatus(c, 400, &APIResponseError{0, "Malformed request body"})
-				return
-			}
+		if util.ReadPostAny(c, &req) != nil {
+			util.WriteJSONStatus(c, 400, &APIResponseError{0, "Malformed request body"})
+			return
 		}
 
 		snow, err := snowflake.ParseString(cid)
