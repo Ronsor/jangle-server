@@ -65,10 +65,28 @@ func InitSessionManager() {
 			}
 		case "update":
 			uf := evt["updateDescription"].(bson.M)["updatedFields"].(bson.M)
-			if _, ok := uf["timestamp"]; ok && len(uf) == 1 {
+			if _, ok := uf["notify_typing_start"]; ok && len(uf) == 1 {
+				var ts gwEvtDataTypingStart
+				err := msDecodeBSON(uf["notify_typing_start"], &ts)
+				if err != nil {
+					return err
+				}
+				if ts.GuildID != 0 {
+					mem, err := GetGuildMemberByUserAndGuildID(ts.UserID, ts.GuildID)
+					log.Println(mem)
+					if err != nil { return err }
+					ts.Member = mem.ToAPI()
+				}
+				SessSub.TryPub(gwPacket{
+					Op: GW_OP_DISPATCH,
+					Type: GW_EVT_TYPING_START,
+					Data: ts,
+				}, ts.ChannelID.String())
 				return nil
 			}
-			pkt, err := GetPresenceForUser(snow)
+		case "replace":
+			var pkt gwPktDataUpdateStatus
+			err := msDecodeBSON(dm, &pkt)
 			if err != nil {
 				return err
 			}

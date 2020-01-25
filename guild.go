@@ -47,10 +47,10 @@ type GuildMember struct {
 	Deleted *time.Time `bson:"deleted,omitempty"`
 }
 
-func GetGuildMembersByUserID(UserID snowflake.ID) ([]*GuildMember, error) {
+func GetGuildMembersByUserID(userID snowflake.ID) ([]*GuildMember, error) {
 	var gm1 []*GuildMember
 	gmc := DB.Core.C("guildmembers")
-	err := gmc.Find(bson.M{"user":UserID}).All(&gm1)
+	err := gmc.Find(bson.M{"user":userID}).All(&gm1)
 	if err != nil {
 		return nil, err
 	}
@@ -61,6 +61,14 @@ func GetGuildMemberByID(id snowflake.ID) (*GuildMember, error) {
 	var gm GuildMember
 	c := DB.Core.C("guildmembers")
 	err := c.Find(bson.M{"_id": id}).One(&gm)
+	if err != nil { return nil, err }
+	return &gm, nil
+}
+
+func GetGuildMemberByUserAndGuildID(userID, guildID snowflake.ID) (*GuildMember, error) {
+	var gm GuildMember
+	c := DB.Core.C("guildmembers")
+	err := c.Find(bson.M{"user":userID, "guild_id":guildID}).One(&gm)
 	if err != nil { return nil, err }
 	return &gm, nil
 }

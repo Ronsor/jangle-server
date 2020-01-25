@@ -159,6 +159,33 @@ func InitRestChannel(r *router.Router) {
 		File *multipart.FileHeader `json:"file"`
 	}
 
+	r.POST("/api/v6/channels/:cid/typing", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		cid := c.UserValue("cid").(string)
+
+		csnow, err := snowflake.ParseString(cid)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
+			return
+		}
+
+		ch, err := GetChannelByID(csnow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
+			return
+		}
+
+		if !ch.GetPermissions(me).Has(PERM_SEND_MESSAGES) {
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
+			return
+		}
+
+		err = me.StartTyping(ch)
+		if err != nil { panic(err) }
+
+		c.SetStatusCode(204)
+	}, RL_SENDMSG)))
+
 	// Why is this so convoluted Discord? multipart/form-data, application/json, "payload_json"????
 	r.POST("/api/v6/channels/:cid/messages", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		defer c.Request.RemoveMultipartFormFiles()

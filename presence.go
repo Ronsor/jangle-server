@@ -12,6 +12,7 @@ type PresenceInternal struct {
 	ID        snowflake.ID           `bson:"_id"`
 	Timestamp time.Time              `bson:"timestamp"`
 	Presence  *gwPktDataUpdateStatus `bson:"presence"`
+	Typing *gwEvtDataTypingStart `bson:"notify_typing_start"`
 }
 
 // I dare say it's awful to repurpose a gateway packet data type for this...
@@ -21,9 +22,14 @@ func SetPresenceForUser(userID snowflake.ID, presence *gwPktDataUpdateStatus) er
 		presence.Status != STATUS_INVISIBLE && presence.Status != STATUS_OFFLINE {
 		return fmt.Errorf("Bad status")
 	}
-	dat := &PresenceInternal{userID, time.Now(), presence}
+	dat := &PresenceInternal{userID, time.Now(), presence, nil}
 	_, err := c.UpsertId(userID, dat)
 	return err
+}
+
+func StartTypingForUser(userID snowflake.ID, typing *gwEvtDataTypingStart) error {
+	c := DB.Core.C("presence")
+	return c.UpdateId(userID, bson.M{"$set": bson.M{"notify_typing_start": typing}})
 }
 
 func RefreshPresenceForUser(userID snowflake.ID) error {

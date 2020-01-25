@@ -220,6 +220,15 @@ func (u *User) ToAPI(safe bool) *APITypeUser {
 	return u2
 }
 
+func (u *User) StartTyping(c *Channel) error {
+	return StartTypingForUser(u.ID, &gwEvtDataTypingStart{
+		ChannelID: c.ID,
+		GuildID: c.GuildID,
+		UserID: u.ID,
+		Timestamp: time.Now().Unix(),
+	})
+}
+
 func (u *User) MarkRead(cid, mid snowflake.ID) {
 	if u.LastMessageIDs != nil {
 		u.LastMessageIDs = map[snowflake.ID]snowflake.ID{}

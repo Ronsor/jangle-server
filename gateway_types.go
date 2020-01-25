@@ -32,10 +32,13 @@ const (
 	GW_EVT_CHANNEL_DELETE      = "CHANNEL_DELETE"
 	GW_EVT_CHANNEL_PINS_UPDATE = "CHANNEL_PINS_UPDATE"
 
+
 	GW_EVT_MESSAGE_CREATE = "MESSAGE_CREATE"
 	GW_EVT_MESSAGE_UPDATE = "MESSAGE_UPDATE"
 	GW_EVT_MESSAGE_DELETE = "MESSAGE_DELETE"
 	GW_EVT_MESSAGE_ACK    = "MESSAGE_ACK" // Undocumented
+
+	GW_EVT_TYPING_START = "TYPING_START"
 
 	GW_EVT_MESSAGE_REACTION_ADD = "MESSAGE_REACTION_ADD"
 
@@ -112,6 +115,10 @@ type _gw_OSProperties struct {
 	JangleCompatible bool   `json:"love_jangle"`
 }
 
+// BIG WARNING
+// Most event and packet data types are DEPRECATED
+// The only ones still used are here
+
 // OP_IDENTIFY packet data
 type gwPktDataIdentify struct {
 	Token              string                 `json:"token"`
@@ -165,4 +172,13 @@ type gwEvtDataPresenceUpdate struct {
 	Activities   []interface{}  `json:"activities"`
 	ClientStatus interface{}    `json:"client_status"`
 	Nick         string         `json:"nick,omitempty"`
+}
+
+// Typing start event packet data
+type gwEvtDataTypingStart struct {
+	ChannelID snowflake.ID `json:"channel_id,string"`
+	GuildID snowflake.ID `json:"guild_id,string,omitempty"`
+	UserID snowflake.ID `json:"user_id,string"`
+	Timestamp int64 `json:"timestamp"`
+	Member *APITypeGuildMember `json:"member,omitempty"`
 }
