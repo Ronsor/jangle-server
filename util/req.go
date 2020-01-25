@@ -18,16 +18,16 @@ func ReadPostAny(c *fasthttp.RequestCtx, i interface{}, opts ...interface{}) err
 	for k, v := range frm.File {
 		m[k] = v[0]
 	}
-	if frm.Value["payload_json"] != nil {
-		err := json.Unmarshal([]byte(frm.Value["payload_json"][0]), i)
-		if err != nil { return err }
-	}
 	dec, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{TagName: "json", Result: i, WeaklyTypedInput: true})
 	if err != nil {
 		return err
 	}
 	err = dec.Decode(m)
 	if err != nil { return err }
+	if frm.Value["payload_json"] != nil {
+		err := json.Unmarshal([]byte(frm.Value["payload_json"][0]), i)
+		if err != nil { return err }
+	}
 	if len(opts) == 0 || !opts[0].(bool) {
 		v := validator.New()
 		err = v.Struct(i)

@@ -506,6 +506,48 @@ func InitRestChannel(r *router.Router) {
 		c.SetStatusCode(204)
 	}, RL_SETINFO)))
 
+	r.DELETE("/api/v6/channels/:cid/pins/:mid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		cid := c.UserValue("cid").(string)
+		mid := c.UserValue("mid").(string)
+
+		csnow, err := snowflake.ParseString(cid)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
+			return
+		}
+
+		ch, err := GetChannelByID(csnow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
+			return
+		}
+
+		if !ch.GetPermissions(me).Has(PERM_MANAGE_MESSAGES) {
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
+			return
+		}
+
+		msnow, err := snowflake.ParseString(mid)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_MESSAGE)
+			return
+		}
+
+		msg, err := GetMessageByID(msnow)
+
+		if err != nil || msg.ChannelID != csnow || msg.Deleted {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_MESSAGE)
+			return
+		}
+
+		msg.Pinned = false
+
+		msg.Save()
+
+		c.SetStatusCode(204)
+	}, RL_SETINFO)))
+
 	r.GET("/api/v6/channels/:cid/pins", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		cid := c.UserValue("cid").(string)
