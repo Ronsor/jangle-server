@@ -111,6 +111,7 @@ type Role struct {
 	Permissions PermSet      `bson:"permission"`
 	Managed     bool         `bson:"managed"`
 	Mentionable bool         `bson:"mentionable"`
+	FirstTime bool `bson:"first_time"`
 }
 
 func (r *Role) ToAPI() *APITypeRole {
@@ -352,6 +353,9 @@ func (g *Guild) CreateChannel(ch *Channel) (*Channel, error) {
 func (g *Guild) AddRole(r *Role) error {
 	if r.ID == 0 {
 		r.ID = flake.Generate()
+		r.FirstTime = true // a stupid hack, but who cares. I have to be done with this.
+	} else {
+		r.FirstTime = false
 	}
 	c := DB.Core.C("guilds")
 	err := c.UpdateId(g.ID, bson.M{"$set": bson.M{"roles." + r.ID.String(): r}})

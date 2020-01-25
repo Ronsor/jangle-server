@@ -171,6 +171,7 @@ type APITypeRole struct {
 	Permissions PermSet      `json:"permission"`
 	Managed     bool         `json:"managed"`
 	Mentionable bool         `json:"mentionable"`
+	FirstTime bool `json:"-"`
 }
 
 // "Safe" Guild type

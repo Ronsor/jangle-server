@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 	//"time"
 
 	"jangled/util"
@@ -211,8 +212,28 @@ func InitSessionManager() {
 			}
 
 			uf := evt["updateDescription"].(bson.M)["updatedFields"].(bson.M)
-			_ = uf
-			_ = g
+			for k, v := range uf {
+				if strings.HasPrefix(k, "roles.") {
+					var role Role
+					err := msDecodeBSON(v, &role)
+					if err != nil {
+						return err // fail fast!
+					}
+					typ := GW_EVT_GUILD_ROLE_UPDATE
+					if role.FirstTime {
+						typ = GW_EVT_GUILD_ROLE_CREATE
+					}
+					SessSub.TryPub(gwPacket{
+						Op: GW_OP_DISPATCH,
+						Type: typ,
+						Data: bson.M{
+							"guild_id": g.ID.String(),
+							"role": role.ToAPI(),
+						},
+						PvtData: &role,
+					}, g.ID.String())
+				}
+			}
 		case "delete":
 			SessSub.TryPub(gwPacket{
 				Op: GW_OP_DISPATCH,
