@@ -374,6 +374,7 @@ func InitRestGuild(r *router.Router) {
 		ExplicitContentFilter       int                 `json:"explicit_content_filter" validate:"min=0,max=0"`
 		Roles                       []*APITypeRole      `json:"roles,omitempty"`    // Ignored
 		Channels                    []APITypeAnyChannel `json:"channels,omitempty"` // Ignored
+		Public bool `json:"public,omitempty"`
 	}
 
 	r.POST("/api/v6/guilds", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
@@ -391,8 +392,12 @@ func InitRestGuild(r *router.Router) {
 			util.WriteJSONStatus(c, 400, APIERR_MAX_GUILDS)
 		}
 
+		feat := []string{}
+		if req.Public { feat = append(feat, GUILD_FEATURE_DISCOVERABLE) }
+
 		g, err := CreateGuild(me, &Guild{
 			Name: req.Name,
+			Features: feat,
 		})
 
 		if err != nil {

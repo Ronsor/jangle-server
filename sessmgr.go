@@ -73,7 +73,6 @@ func InitSessionManager() {
 				}
 				if ts.GuildID != 0 {
 					mem, err := GetGuildMemberByUserAndGuildID(ts.UserID, ts.GuildID)
-					log.Println(mem)
 					if err != nil { return err }
 					ts.Member = mem.ToAPI()
 				}
