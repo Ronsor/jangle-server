@@ -145,17 +145,17 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 		}
 
 		for _, g := range guilds {
-			codec.Send(ws, mkGwPkt(GW_OP_DISPATCH, g.ToAPI(sess.User.ID), sess.Seq, GW_EVT_GUILD_CREATE))
+			codec.Send(ws, mkGwPkt(GW_OP_DISPATCH, g.ToAPI(sess.User.ID, true), sess.Seq, GW_EVT_GUILD_CREATE))
 			SessSub.AddSub(sess.EvtChan, g.ID.String())
 			sess.Seq++
-			chans, _ := g.Channels()
+/*			chans, _ := g.Channels()
 			for _, ch := range chans {
 				if ch.GetPermissions(sess.User).Has(PERM_VIEW_CHANNEL) {
 					codec.Send(ws, mkGwPkt(GW_OP_DISPATCH, ch.ToAPI(), sess.Seq, GW_EVT_CHANNEL_CREATE))
 					SessSub.AddSub(sess.EvtChan, ch.ID.String())
 					sess.Seq++
 				}
-			}
+			}*/
 		}
 		break
 	// TODO: resuming sessions
