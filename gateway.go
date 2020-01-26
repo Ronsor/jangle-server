@@ -42,7 +42,7 @@ func InitGateway(r *router.Router) {
 			return
 		}
 		err := (&websocket.FastHTTPUpgrader{ReadBufferSize: 4096, WriteBufferSize: 4096,
-				CheckOrigin: func(_ *fasthttp.RequestCtx) bool { return true }}).Upgrade(c, func(n *websocket.Conn) { InitGatewaySession(n, c) })
+			CheckOrigin: func(_ *fasthttp.RequestCtx) bool { return true }}).Upgrade(c, func(n *websocket.Conn) { InitGatewaySession(n, c) })
 		if err != nil {
 			util.WriteJSONStatus(c, 400, &responseError{Code: 0, Message: "WebSocket initialization failure"})
 		}
@@ -148,14 +148,14 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 			codec.Send(ws, mkGwPkt(GW_OP_DISPATCH, g.ToAPI(sess.User.ID, true), sess.Seq, GW_EVT_GUILD_CREATE))
 			SessSub.AddSub(sess.EvtChan, g.ID.String())
 			sess.Seq++
-/*			chans, _ := g.Channels()
-			for _, ch := range chans {
-				if ch.GetPermissions(sess.User).Has(PERM_VIEW_CHANNEL) {
-					codec.Send(ws, mkGwPkt(GW_OP_DISPATCH, ch.ToAPI(), sess.Seq, GW_EVT_CHANNEL_CREATE))
-					SessSub.AddSub(sess.EvtChan, ch.ID.String())
-					sess.Seq++
-				}
-			}*/
+			/*			chans, _ := g.Channels()
+						for _, ch := range chans {
+							if ch.GetPermissions(sess.User).Has(PERM_VIEW_CHANNEL) {
+								codec.Send(ws, mkGwPkt(GW_OP_DISPATCH, ch.ToAPI(), sess.Seq, GW_EVT_CHANNEL_CREATE))
+								SessSub.AddSub(sess.EvtChan, ch.ID.String())
+								sess.Seq++
+							}
+						}*/
 		}
 		break
 	// TODO: resuming sessions

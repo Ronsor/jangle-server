@@ -34,7 +34,7 @@ type Channel struct {
 	LastMessageID snowflake.ID `bson:"last_message_id"`
 
 	// DM/Group DM only
-	RecipientIDs []snowflake.ID `bson:"recipient_ids"`
+	RecipientIDs []snowflake.ID `bson:"recipient_ids,omitempty"`
 
 	// Group DM only
 	OwnerID snowflake.ID `bson:"owner_id"`

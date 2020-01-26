@@ -130,7 +130,9 @@ func InitRestGuild(r *router.Router) {
 
 		err = g.DelMember(snow)
 
-		if err != nil { panic(err) }
+		if err != nil {
+			panic(err)
+		}
 		c.SetStatusCode(204)
 	}, RL_DELOBJ)))
 
@@ -374,7 +376,7 @@ func InitRestGuild(r *router.Router) {
 		ExplicitContentFilter       int                 `json:"explicit_content_filter" validate:"min=0,max=0"`
 		Roles                       []*APITypeRole      `json:"roles,omitempty"`    // Ignored
 		Channels                    []APITypeAnyChannel `json:"channels,omitempty"` // Ignored
-		Public bool `json:"public,omitempty"`
+		Public                      bool                `json:"public,omitempty"`
 	}
 
 	r.POST("/api/v6/guilds", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
@@ -393,10 +395,12 @@ func InitRestGuild(r *router.Router) {
 		}
 
 		feat := []string{}
-		if req.Public { feat = append(feat, GUILD_FEATURE_DISCOVERABLE) }
+		if req.Public {
+			feat = append(feat, GUILD_FEATURE_DISCOVERABLE)
+		}
 
 		g, err := CreateGuild(me, &Guild{
-			Name: req.Name,
+			Name:     req.Name,
 			Features: feat,
 		})
 

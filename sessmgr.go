@@ -26,7 +26,7 @@ func msDecodeBSON(in, out interface{}) error {
 }
 
 func InitSessionManager() {
-	go RunSessionManager(DB.Core.Session, "presence", func (dm bson.M, evt bson.M) error {
+	go RunSessionManager(DB.Core.Session, "presence", func(dm bson.M, evt bson.M) error {
 		log.Println(evt)
 		id := fmt.Sprintf("%v", evt["documentKey"].(bson.M)["_id"])
 		snow, err := snowflake.ParseString(id)
@@ -52,14 +52,14 @@ func InitSessionManager() {
 			usrapi := usr.ToAPI(true) // just cache it
 			for _, v := range gms {
 				SessSub.TryPub(gwPacket{
-					Op: GW_OP_DISPATCH,
+					Op:   GW_OP_DISPATCH,
 					Type: GW_EVT_PRESENCE_UPDATE,
 					Data: &gwEvtDataPresenceUpdate{
-						User: usrapi,
-						Roles: v.Roles,
+						User:    usrapi,
+						Roles:   v.Roles,
 						GuildID: v.GuildID,
-						Status: pkt.Status,
-						Nick: v.Nick,
+						Status:  pkt.Status,
+						Nick:    v.Nick,
 					},
 				}, v.GuildID.String())
 			}
@@ -73,11 +73,13 @@ func InitSessionManager() {
 				}
 				if ts.GuildID != 0 {
 					mem, err := GetGuildMemberByUserAndGuildID(ts.UserID, ts.GuildID)
-					if err != nil { return err }
+					if err != nil {
+						return err
+					}
 					ts.Member = mem.ToAPI()
 				}
 				SessSub.TryPub(gwPacket{
-					Op: GW_OP_DISPATCH,
+					Op:   GW_OP_DISPATCH,
 					Type: GW_EVT_TYPING_START,
 					Data: ts,
 				}, ts.ChannelID.String())
@@ -100,14 +102,14 @@ func InitSessionManager() {
 			usrapi := usr.ToAPI(true) // just cache it
 			for _, v := range gms {
 				SessSub.TryPub(gwPacket{
-					Op: GW_OP_DISPATCH,
+					Op:   GW_OP_DISPATCH,
 					Type: GW_EVT_PRESENCE_UPDATE,
 					Data: &gwEvtDataPresenceUpdate{
-						User: usrapi,
-						Roles: v.Roles,
+						User:    usrapi,
+						Roles:   v.Roles,
 						GuildID: v.GuildID,
-						Status: pkt.Status,
-						Nick: v.Nick,
+						Status:  pkt.Status,
+						Nick:    v.Nick,
 					},
 				}, v.GuildID.String())
 			}
@@ -156,9 +158,9 @@ func InitSessionManager() {
 			pld := gm.ToAPI()
 			pld.GuildID = gm.GuildID
 			SessSub.TryPub(gwPacket{
-				Op: GW_OP_DISPATCH,
-				Type: GW_EVT_GUILD_MEMBER_UPDATE,
-				Data: pld,
+				Op:      GW_OP_DISPATCH,
+				Type:    GW_EVT_GUILD_MEMBER_UPDATE,
+				Data:    pld,
 				PvtData: &gm,
 			}, gm.GuildID.String())
 		case "update":
@@ -172,20 +174,20 @@ func InitSessionManager() {
 					return err
 				}
 				SessSub.TryPub(gwPacket{
-					Op: GW_OP_DISPATCH,
+					Op:   GW_OP_DISPATCH,
 					Type: GW_EVT_GUILD_DELETE,
 					Data: bson.M{
-						"id": gm.GuildID.String(),
+						"id":          gm.GuildID.String(),
 						"unavailable": true,
 					},
 				}, gm.UserID.String())
 
 				SessSub.TryPub(gwPacket{
-					Op: GW_OP_DISPATCH,
+					Op:   GW_OP_DISPATCH,
 					Type: GW_EVT_GUILD_MEMBER_REMOVE,
 					Data: bson.M{
 						"guild_id": gm.GuildID.String(),
-						"user": usr.ToAPI(true),
+						"user":     usr.ToAPI(true),
 					},
 				}, gm.GuildID.String())
 				return nil
@@ -193,9 +195,9 @@ func InitSessionManager() {
 			pld := gm.ToAPI()
 			pld.GuildID = gm.GuildID
 			SessSub.TryPub(gwPacket{
-				Op: GW_OP_DISPATCH,
-				Type: GW_EVT_GUILD_MEMBER_UPDATE,
-				Data: pld,
+				Op:      GW_OP_DISPATCH,
+				Type:    GW_EVT_GUILD_MEMBER_UPDATE,
+				Data:    pld,
 				PvtData: gm,
 			}, gm.GuildID.String())
 		}
@@ -241,11 +243,11 @@ func InitSessionManager() {
 						typ = GW_EVT_GUILD_ROLE_CREATE
 					}
 					SessSub.TryPub(gwPacket{
-						Op: GW_OP_DISPATCH,
+						Op:   GW_OP_DISPATCH,
 						Type: typ,
 						Data: bson.M{
 							"guild_id": g.ID.String(),
-							"role": role.ToAPI(),
+							"role":     role.ToAPI(),
 						},
 						PvtData: &role,
 					}, g.ID.String())
@@ -253,10 +255,10 @@ func InitSessionManager() {
 			}
 		case "delete":
 			SessSub.TryPub(gwPacket{
-				Op: GW_OP_DISPATCH,
+				Op:   GW_OP_DISPATCH,
 				Type: GW_EVT_GUILD_DELETE,
 				Data: bson.M{
-					"id": snow.String(),
+					"id":          snow.String(),
 					"unavailable": true,
 				},
 			}, snow.String())
@@ -309,9 +311,9 @@ func InitSessionManager() {
 			}
 			if ch.Deleted != nil {
 				SessSub.TryPub(gwPacket{
-					Op: GW_OP_DISPATCH,
-					Type: GW_EVT_CHANNEL_DELETE,
-					Data: ch.ToAPI(),
+					Op:      GW_OP_DISPATCH,
+					Type:    GW_EVT_CHANNEL_DELETE,
+					Data:    ch.ToAPI(),
 					PvtData: ch,
 				}, tgt)
 				return nil

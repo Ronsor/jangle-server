@@ -32,7 +32,6 @@ const (
 	GW_EVT_CHANNEL_DELETE      = "CHANNEL_DELETE"
 	GW_EVT_CHANNEL_PINS_UPDATE = "CHANNEL_PINS_UPDATE"
 
-
 	GW_EVT_MESSAGE_CREATE = "MESSAGE_CREATE"
 	GW_EVT_MESSAGE_UPDATE = "MESSAGE_UPDATE"
 	GW_EVT_MESSAGE_DELETE = "MESSAGE_DELETE"
@@ -176,9 +175,9 @@ type gwEvtDataPresenceUpdate struct {
 
 // Typing start event packet data
 type gwEvtDataTypingStart struct {
-	ChannelID snowflake.ID `json:"channel_id,string"`
-	GuildID snowflake.ID `json:"guild_id,string,omitempty"`
-	UserID snowflake.ID `json:"user_id,string"`
-	Timestamp int64 `json:"timestamp"`
-	Member *APITypeGuildMember `json:"member,omitempty"`
+	ChannelID snowflake.ID        `json:"channel_id,string"`
+	GuildID   snowflake.ID        `json:"guild_id,string,omitempty"`
+	UserID    snowflake.ID        `json:"user_id,string"`
+	Timestamp int64               `json:"timestamp"`
+	Member    *APITypeGuildMember `json:"member,omitempty"`
 }

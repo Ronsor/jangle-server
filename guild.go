@@ -35,8 +35,8 @@ type UnavailableGuild struct {
 }
 
 type GuildMember struct {
-	ID snowflake.ID `bson:"_id"`
-	GuildID snowflake.ID `bson:"guild_id"`
+	ID           snowflake.ID   `bson:"_id"`
+	GuildID      snowflake.ID   `bson:"guild_id"`
 	UserID       snowflake.ID   `bson:"user"`
 	Nick         string         `bson:"nick"`
 	Roles        []snowflake.ID `bson:"roles"`
@@ -44,13 +44,13 @@ type GuildMember struct {
 	PremiumSince int64          `bson:"premium_since"`
 	Deaf         bool           `bson:"deaf"`
 	Mute         bool           `bson:"mute"`
-	Deleted *time.Time `bson:"deleted,omitempty"`
+	Deleted      *time.Time     `bson:"deleted,omitempty"`
 }
 
 func GetGuildMembersByUserID(userID snowflake.ID) ([]*GuildMember, error) {
 	var gm1 []*GuildMember
 	gmc := DB.Core.C("guildmembers")
-	err := gmc.Find(bson.M{"user":userID}).All(&gm1)
+	err := gmc.Find(bson.M{"user": userID}).All(&gm1)
 	if err != nil {
 		return nil, err
 	}
@@ -61,15 +61,19 @@ func GetGuildMemberByID(id snowflake.ID) (*GuildMember, error) {
 	var gm GuildMember
 	c := DB.Core.C("guildmembers")
 	err := c.Find(bson.M{"_id": id}).One(&gm)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	return &gm, nil
 }
 
 func GetGuildMemberByUserAndGuildID(userID, guildID snowflake.ID) (*GuildMember, error) {
 	var gm GuildMember
 	c := DB.Core.C("guildmembers")
-	err := c.Find(bson.M{"user":userID, "guild_id":guildID}).One(&gm)
-	if err != nil { return nil, err }
+	err := c.Find(bson.M{"user": userID, "guild_id": guildID}).One(&gm)
+	if err != nil {
+		return nil, err
+	}
 	return &gm, nil
 }
 
@@ -119,7 +123,7 @@ type Role struct {
 	Permissions PermSet      `bson:"permission"`
 	Managed     bool         `bson:"managed"`
 	Mentionable bool         `bson:"mentionable"`
-	FirstTime bool `bson:"first_time"`
+	FirstTime   bool         `bson:"first_time"`
 }
 
 func (r *Role) ToAPI() *APITypeRole {
@@ -144,12 +148,12 @@ type Guild struct {
 	DefaultMessageNotifications int `bson:"default_message_notifications"`
 	ExplicitContentFilter       int `bson:"explicit_content_filter"`
 
-	Roles         map[string]*Role        `bson:"roles"`
-	Emojis        []*Emoji                `bson:"emojis"`
+	Roles  map[string]*Role `bson:"roles"`
+	Emojis []*Emoji         `bson:"emojis"`
 	//Members       map[string]*GuildMember `bson:"members"` // We don't use this now as it is too inefficient
-	Features      []string                `bson:"features"`
-	MfaLevel      int                     `bson:"mfa_level"`
-	ApplicationID snowflake.ID            `bson:"application_id"`
+	Features      []string     `bson:"features"`
+	MfaLevel      int          `bson:"mfa_level"`
+	ApplicationID snowflake.ID `bson:"application_id"`
 
 	WidgetEnabled   bool         `bson:"widget_enabled"`
 	WidgetChannelID snowflake.ID `bson:"widget_channel_id"`
@@ -178,10 +182,13 @@ func CreateGuild(u *User, g *Guild) (*Guild, error) {
 	if err != nil {
 		return nil, err
 	}
-	g.CreateChannel(&Channel{
+	_, err = g.CreateChannel(&Channel{
 		Name: "general",
 		Type: CHTYPE_GUILD_TEXT,
 	})
+	if err != nil {
+		return nil, err
+	}
 	err = g.AddMember(u.ID, false)
 	if err != nil {
 		return nil, err
@@ -202,7 +209,7 @@ func GetGuildByID(ID snowflake.ID) (*Guild, error) {
 func GetGuildsByUserID(UserID snowflake.ID) ([]*Guild, error) {
 	var gm1 []*GuildMember
 	gmc := DB.Core.C("guildmembers")
-	err := gmc.Find(bson.M{"user":UserID}).All(&gm1)
+	err := gmc.Find(bson.M{"user": UserID}).All(&gm1)
 	if err != nil {
 		return nil, err
 	}
@@ -228,7 +235,7 @@ func (g *Guild) Delete() error {
 		}
 	}
 	gmc := DB.Core.C("guildmembers")
-	_, err = gmc.RemoveAll(bson.M{"guild_id":g.ID})
+	_, err = gmc.RemoveAll(bson.M{"guild_id": g.ID})
 	if err != nil {
 		return err
 	}
@@ -291,7 +298,9 @@ func (g *Guild) GetMember(UserID snowflake.ID) (*GuildMember, error) {
 	c := DB.Core.C("guildmembers")
 	var m GuildMember
 	err := c.Find(bson.M{"user": UserID, "guild_id": g.ID}).One(&m)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	return &m, nil
 }
 
@@ -303,10 +312,16 @@ func (g *Guild) Members(limit int, after snowflake.ID) ([]*GuildMember, error) {
 	}
 	c := DB.Core.C("guildmembers")
 	resp := c.Find(wholequery).Sort("user")
-	if limit == 0 { limit = 1 }
-	if limit > 0 { resp = resp.Limit(limit) }
+	if limit == 0 {
+		limit = 1
+	}
+	if limit > 0 {
+		resp = resp.Limit(limit)
+	}
 	err := resp.All(&o)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	return o, err
 }
 
@@ -323,7 +338,7 @@ func (g *Guild) DelMember(UserID snowflake.ID) error {
 }
 
 func (g *Guild) GetPermissions(u *User) PermSet {
-	if g.OwnerID == u.ID || u.Flags & USER_FLAG_STAFF != 0 {
+	if g.OwnerID == u.ID || u.Flags&USER_FLAG_STAFF != 0 {
 		return PERM_EVERYTHING // PERM_ADMINISTRATOR?
 	}
 	mem, err := g.GetMember(u.ID)
@@ -351,7 +366,7 @@ func (g *Guild) CreateChannel(ch *Channel) (*Channel, error) {
 	ch.ID = flake.Generate()
 	ch.GuildID = g.ID
 	c := DB.Core.C("channels")
-	err := c.Insert(&ch)
+	err := c.Insert(ch)
 	if err != nil {
 		return nil, err
 	}
@@ -385,6 +400,7 @@ func (g *Guild) GetRole(id snowflake.ID) (*Role, error) {
 func (g *Guild) DelRole(id snowflake.ID) error {
 	// probably not the best idea, but the fastest way to remove a dead role
 	// alternatively drop it on next update, but meh
+	if id == g.ID { return APIERR_UNKNOWN_ROLE }
 	gmc := DB.Core.C("guildmembers")
 	_, err := gmc.UpdateAll(bson.M{"guild_id": g.ID}, bson.M{"$pull": bson.M{"roles": id}})
 	if err != nil {
@@ -444,7 +460,7 @@ func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID, forCreateEv
 		PremiumTier:                 g.PremiumTier,
 		PreferredLocale:             g.PreferredLocale,
 		MemberCount:                 g.CountMembers(),
-		MaxPresences:                1000,
+		MaxPresences:                4000,
 		VoiceStates:                 []interface{}{},
 	}
 	if oUid != 0 {

@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"mime/multipart"
 	"strconv"
 	"time"
-	"mime/multipart"
 
 	"jangled/util"
 
@@ -151,12 +151,12 @@ func InitRestChannel(r *router.Router) {
 	r.PUT("/api/v6/channels/:cid", APIReqPutPatchChannelsCidFn)
 
 	type APIReqPostChannelsCidMessages struct {
-		Content     string        `json:"content" validate:"required_without_all=Embed File,max=3072"`
-		Nonce       interface{}   `json:"nonce" validate:"max=32"`
-		TTS         bool          `json:"tts"`
-		Embed       *MessageEmbed `json:"embed"`
-		PayloadJson string        `json:"payload_json"`
-		File *multipart.FileHeader `json:"file"`
+		Content     string                `json:"content" validate:"required_without_all=Embed File,max=3072"`
+		Nonce       interface{}           `json:"nonce" validate:"max=32"`
+		TTS         bool                  `json:"tts"`
+		Embed       *MessageEmbed         `json:"embed"`
+		PayloadJson string                `json:"payload_json"`
+		File        *multipart.FileHeader `json:"file"`
 	}
 
 	r.POST("/api/v6/channels/:cid/typing", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
@@ -181,7 +181,9 @@ func InitRestChannel(r *router.Router) {
 		}
 
 		err = me.StartTyping(ch)
-		if err != nil { panic(err) }
+		if err != nil {
+			panic(err)
+		}
 
 		c.SetStatusCode(204)
 	}, RL_SENDMSG)))

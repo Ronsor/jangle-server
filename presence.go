@@ -12,7 +12,7 @@ type PresenceInternal struct {
 	ID        snowflake.ID           `bson:"_id"`
 	Timestamp time.Time              `bson:"timestamp"`
 	Presence  *gwPktDataUpdateStatus `bson:"presence"`
-	Typing *gwEvtDataTypingStart `bson:"notify_typing_start"`
+	Typing    *gwEvtDataTypingStart  `bson:"notify_typing_start"`
 }
 
 // I dare say it's awful to repurpose a gateway packet data type for this...

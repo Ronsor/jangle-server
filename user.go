@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"time"
 	"math/rand"
+	"time"
 
-	"jangled/util"
 	jwt "jangled/sjwt"
+	"jangled/util"
 
 	"github.com/bwmarrin/snowflake"
 	"github.com/globalsign/mgo/bson"
@@ -66,7 +66,7 @@ type User struct {
 
 	Presence       *gwPktDataUpdateStatus        `bson:"presence"`
 	LastMessageIDs map[snowflake.ID]snowflake.ID `bson:"read_last_message_ids"`
-	JwtSecret string `bson:"jwt_secret"`
+	JwtSecret      string                        `bson:"jwt_secret"`
 }
 
 // CreateUser creates a user
@@ -74,11 +74,11 @@ func CreateUser(username, email, password string) (*User, error) {
 	c := DB.Core.C("users")
 
 	usr := &User{
-		ID: flake.Generate(),
-		Username: username,
-		Email: email,
+		ID:           flake.Generate(),
+		Username:     username,
+		Email:        email,
 		PasswordHash: util.CryptPass(password),
-		Flags: USER_FLAG_UNVERIFIED,
+		Flags:        USER_FLAG_UNVERIFIED,
 		Settings: &UserSettings{
 			Locale: "en-US",
 		},
@@ -90,10 +90,14 @@ func CreateUser(username, email, password string) (*User, error) {
 	for tries := 0; tries < 100; tries++ {
 		usr.Discriminator = fmt.Sprintf("%04d", dint)
 		err = c.Insert(usr)
-		if err == nil { break }
+		if err == nil {
+			break
+		}
 	}
 
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	return usr, nil
 }
 
@@ -184,7 +188,7 @@ func (u *User) GetTokenSecret() []byte {
 func (u *User) IssueToken(duration time.Duration) string {
 	c := jwt.New()
 	c.SetSubject(u.ID.String())
-	c.Set("tag", u.Username + "#" + u.Discriminator)
+	c.Set("tag", u.Username+"#"+u.Discriminator)
 	c.SetIssuedAt(time.Now())
 	c.SetExpiresAt(time.Now().Add(duration))
 	c.SetTokenID()
@@ -223,8 +227,8 @@ func (u *User) ToAPI(safe bool) *APITypeUser {
 func (u *User) StartTyping(c *Channel) error {
 	return StartTypingForUser(u.ID, &gwEvtDataTypingStart{
 		ChannelID: c.ID,
-		GuildID: c.GuildID,
-		UserID: u.ID,
+		GuildID:   c.GuildID,
+		UserID:    u.ID,
 		Timestamp: time.Now().Unix(),
 	})
 }
