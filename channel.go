@@ -45,7 +45,7 @@ type Channel struct {
 	Position             int                    `bson:"position"`
 	Name                 string                 `bson:"name"`
 	ParentID             snowflake.ID           `bson:"parent_id"`
-	PermissionOverwrites []*PermissionOverwrite `bson:"permission_overwrites"`
+	PermissionOverwrites map[string]*PermissionOverwrite `bson:"permission_overwrites"`
 
 	// Guild Text Channel only
 	Topic            string `bson:"topic"`
@@ -241,7 +241,8 @@ func (c *Channel) SetPermissionOverwrites(po []*PermissionOverwrite, u *User) er
 	if !c.GetPermissions(u).Has(PERM_ADMINISTRATOR) {
 		return fmt.Errorf("Permission denied")
 	}
-	c.PermissionOverwrites = po
+	c.PermissionOverwrites = map[string]*PermissionOverwrite{}
+	for _, v := range po { c.PermissionOverwrites[v.ID.String()] = v }
 	return c.Save()
 }
 
@@ -255,29 +256,26 @@ func (c *Channel) GetPermissions(u *User) PermSet {
 			return 0
 		}
 		perm := gd.GetPermissions(u)
+		if perm.Has(PERM_ADMINISTRATOR) || c.PermissionOverwrites == nil {
+			return perm
+		}
 		mem, err := gd.GetMember(u.ID)
 		if err != nil {
 			return 0
 		}
-		var uOvw *PermissionOverwrite
-		var uRoles = map[snowflake.ID]bool{}
+		var allow, deny PermSet
 		for _, v := range mem.Roles {
-			uRoles[v] = true
+			ovw, ok := c.PermissionOverwrites[v.String()]
+			if !ok { continue }
+			allow |= ovw.Allow
+			deny |= ovw.Deny
 		}
-		for _, v := range c.PermissionOverwrites {
-			if v.ID == u.ID {
-				uOvw = v
-				continue
-			}
-			if !uRoles[v.ID] {
-				continue
-			}
-			perm |= v.Allow
-			perm ^= v.Deny
-		}
+		perm &= ^deny
+		perm |= allow
+		uOvw := c.PermissionOverwrites[u.ID.String()]
 		if uOvw != nil {
+			perm &= ^uOvw.Deny
 			perm |= uOvw.Allow
-			perm ^= uOvw.Deny
 		}
 		return perm
 	}
