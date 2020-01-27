@@ -182,6 +182,7 @@ func CreateGuild(u *User, g *Guild) (*Guild, error) {
 	if err != nil {
 		return nil, err
 	}
+	gCache.Set(g.ID, *g)
 	_, err = g.CreateChannel(&Channel{
 		Name: "general",
 		Type: CHTYPE_GUILD_TEXT,
@@ -196,13 +197,18 @@ func CreateGuild(u *User, g *Guild) (*Guild, error) {
 	return g, nil
 }
 
-func GetGuildByID(ID snowflake.ID) (*Guild, error) {
+func GetGuildByID(id snowflake.ID) (*Guild, error) {
 	var g2 Guild
+	if g, ok := gCache.Get(id); ok {
+		g2 = g.(Guild)
+		return &g2, nil
+	}
 	c := DB.Core.C("guilds")
-	err := c.Find(bson.M{"_id": ID}).One(&g2)
+	err := c.Find(bson.M{"_id": id}).One(&g2)
 	if err != nil {
 		return nil, err
 	}
+	gCache.Set(id, g2)
 	return &g2, nil
 }
 

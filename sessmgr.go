@@ -30,7 +30,7 @@ func InitSessionManager() {
 		log.Println(evt)
 		id := fmt.Sprintf("%v", evt["documentKey"].(bson.M)["_id"])
 		snow, err := snowflake.ParseString(id)
-		_ = snow
+		gCache.Del(snow)
 		if err != nil {
 			return err
 		}
@@ -120,7 +120,7 @@ func InitSessionManager() {
 		log.Println(evt)
 		id := fmt.Sprintf("%v", evt["documentKey"].(bson.M)["_id"])
 		snow, err := snowflake.ParseString(id)
-		_ = snow
+		gCache.Del(snow)
 		if err != nil {
 			return err
 		}
@@ -207,7 +207,7 @@ func InitSessionManager() {
 		log.Println(evt)
 		id := fmt.Sprintf("%v", evt["documentKey"].(bson.M)["_id"])
 		snow, err := snowflake.ParseString(id)
-		_ = snow
+		gCache.Del(snow)
 		if err != nil {
 			return err
 		}
@@ -269,7 +269,7 @@ func InitSessionManager() {
 		log.Println(evt)
 		id := fmt.Sprintf("%v", evt["documentKey"].(bson.M)["_id"])
 		snow, err := snowflake.ParseString(id)
-		_ = snow
+		gCache.Del(snow)
 		if err != nil {
 			return err
 		}
@@ -331,7 +331,7 @@ func InitSessionManager() {
 		log.Println(evt)
 		id := fmt.Sprintf("%v", evt["documentKey"].(bson.M)["_id"])
 		snow, err := snowflake.ParseString(id)
-		_ = snow
+		gCache.Del(snow)
 		if err != nil {
 			return err
 		}

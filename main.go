@@ -12,7 +12,7 @@ import (
 	"github.com/vharitonsky/iniflags"
 )
 
-const VERSION = "0.1.0/v6"
+const VERSION = "0.1.1/v6"
 
 var (
 	flgListen  = flag.String("listen", "0.0.0.0:8081", "Listen address for API server")
@@ -23,6 +23,8 @@ var (
 	flgStaging    = flag.Bool("staging", false, "Add dummy data for testing")
 	flgNoPanic    = flag.Bool("nopanic", true, "Catch all panics in API handlers")
 
+	flgObjCacheLimit = flag.Int("cachelimit", 4096, "Object cache limit")
+
 	flgNode = flag.Int64("node", 1, "Node ID")
 )
 
@@ -32,6 +34,7 @@ var stopChan = make(chan error)
 func main() {
 	iniflags.Parse()
 	util.NoPanic = *flgNoPanic
+	gCache.Limit(*flgObjCacheLimit)
 	log.Printf("info: jangle-jangled/%s loading...", VERSION)
 
 	flake, _ = snowflake.NewNode(*flgNode)

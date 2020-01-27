@@ -44,7 +44,7 @@ func InitRestGuild(r *router.Router) {
 			return
 		}
 
-		if g.OwnerID != me.ID {
+		if g.OwnerID != me.ID && me.Flags & USER_FLAG_STAFF == 0 {
 			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
 			return
 		}
