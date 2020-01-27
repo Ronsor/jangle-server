@@ -173,6 +173,71 @@ func InitRestGuild(r *router.Router) {
 		util.WriteJSON(c, mem.ToAPI())
 	}, RL_NEWOBJ), "uid"))
 
+	type APIReqPatchGuildsGidMembersUid struct {
+		Nick *string `json:"nick,omitempty" validate:"min=0,max=32,omitempty"`
+		Roles *[]snowflake.ID `json:"roles,omitempty" validate:"max=250,omitempty"`
+	}
+
+	r.PATCH("/api/v6/guilds/:gid/members/:uid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+
+		var req APIReqPatchGuildsGidMembersUid
+		if util.ReadPostJSON(c, &req) != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+
+		gid := c.UserValue("gid").(string)
+		uid := c.UserValue("uid").(string)
+
+		snow, err := snowflake.ParseString(gid)
+		if err != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+
+		g, err := GetGuildByID(snow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_GUILD)
+			return
+		}
+
+		usnow, err := snowflake.ParseString(uid)
+		if err != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+
+		mem, err := g.GetMember(usnow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_MEMBER)
+			return
+		}
+
+		if req.Nick != nil && !g.GetPermissions(me).Has(PERM_MANAGE_NICKNAMES) {
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
+			return
+		} else if req.Nick != nil {
+			mem.Nick = *req.Nick
+		}
+
+		if req.Roles != nil && !g.GetPermissions(me).Has(PERM_MANAGE_ROLES) {
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
+			return
+		} else if req.Roles != nil {
+			// TODO: insecure
+			mem.Roles = *req.Roles
+		}
+
+		err = g.SetMember(mem)
+
+		if err != nil {
+			panic(err)
+		}
+
+		c.SetStatusCode(204)
+	}, RL_SETINFO)))
+
 	type APIReqPatchGuildsGidMembersMeNick struct {
 		Nick string `json:"nick" validate:"min=0,max=32"`
 	}
