@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"syscall"
 
 	"jangled/util"
 
@@ -33,6 +34,12 @@ var stopChan = make(chan error)
 
 func main() {
 	iniflags.Parse()
+	if syscall.Getuid() == 1 {
+		syscall.Chdir(".")
+		syscall.Chroot(".")
+		syscall.Setgid(65534)
+		syscall.Setuid(65534)
+	}
 	util.NoPanic = *flgNoPanic
 	gCache.Limit(*flgObjCacheLimit)
 	log.Printf("info: jangle-jangled/%s loading...", VERSION)
@@ -60,6 +67,7 @@ func main() {
 	InitRestUser(r)
 	InitRestChannel(r)
 	InitRestGuild(r)
+	InitRestAuth(r)
 	log.Printf("info: initialized rest api routes")
 
 	InitSessionManager()

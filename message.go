@@ -9,6 +9,7 @@ import (
 
 const (
 	MSGTYPE_DEFAULT = 0
+	MSGTYPE_GUILD_MEMBER_JOIN = 7
 	// TODO: the rest
 	MSGTYPE_PATCH_REACT = 0x42424201 // wrong on so many levels
 )

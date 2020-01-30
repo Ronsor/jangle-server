@@ -96,6 +96,7 @@ func (gm *GuildMember) HasRole(id snowflake.ID) bool {
 }
 
 func (gm *GuildMember) DelRole(id snowflake.ID) {
+	if id == gm.GuildID { return }
 	for k, v := range gm.Roles {
 		if v != id {
 			continue
@@ -124,6 +125,27 @@ type Role struct {
 	Managed     bool         `bson:"managed"`
 	Mentionable bool         `bson:"mentionable"`
 	FirstTime   bool         `bson:"first_time"`
+}
+
+func CanSetRoles(has []*Role, set []*Role) bool {
+	var bestA, bestB *Role
+	for _, v := range has {
+		if v.Position > bestA.Position {
+			bestA = v
+		}
+	}
+	for _, v := range set {
+		if v.Position > bestB.Position {
+			bestB = v
+		}
+	}
+	if bestA == nil {
+		return false
+	}
+	if bestB == nil {
+		return true
+	}
+	return bestA.Position > bestB.Position
 }
 
 func (r *Role) ToAPI() *APITypeRole {
@@ -183,13 +205,15 @@ func CreateGuild(u *User, g *Guild) (*Guild, error) {
 		return nil, err
 	}
 	gCache.Set(g.ID, *g)
-	_, err = g.CreateChannel(&Channel{
+	ch, err := g.CreateChannel(&Channel{
 		Name: "general",
 		Type: CHTYPE_GUILD_TEXT,
 	})
 	if err != nil {
 		return nil, err
 	}
+	g.SystemChannelID = ch.ID
+	g.Save()
 	err = g.AddMember(u.ID, false)
 	if err != nil {
 		return nil, err
@@ -289,11 +313,21 @@ func (g *Guild) SetMember(extra *GuildMember, opts ...interface{} /* checkBans, 
 	} else {
 		_, err = c.Upsert(bson.M{"user": gm.UserID, "guild_id": g.ID}, gm)
 	}
+	if len(opts) > 2 && opts[2].(bool) && err == nil && g.SystemChannelID > 0 {
+		ch, err := GetChannelByID(g.SystemChannelID)
+		if err == nil {
+			ch.CreateMessage(&Message{
+				Author: &User{ID: gm.UserID},
+				Type: MSGTYPE_GUILD_MEMBER_JOIN,
+				Content: "#u has joined",
+			})
+		}
+	}
 	return err
 }
 
 func (g *Guild) AddMember(UserID snowflake.ID, checkBans bool) error {
-	return g.SetMember(&GuildMember{UserID: UserID}, checkBans, true)
+	return g.SetMember(&GuildMember{UserID: UserID}, checkBans, true, true)
 }
 
 func (g *Guild) GetMember(UserID snowflake.ID) (*GuildMember, error) {
@@ -403,10 +437,31 @@ func (g *Guild) GetRole(id snowflake.ID) (*Role, error) {
 	return r, nil
 }
 
+func (g *Guild) CanSetRoles(has []snowflake.ID, set []snowflake.ID) bool {
+	var has2, set2 []*Role
+	for _, v := range has {
+		role, err := g.GetRole(v)
+		if err != nil {
+			return false
+		}
+		has2 = append(has2, role)
+	}
+	for _, v := range set {
+		role, err := g.GetRole(v)
+		if err != nil {
+			return false
+		}
+		set2 = append(set2, role)
+	}
+	return CanSetRoles(has2, set2)
+}
+
 func (g *Guild) DelRole(id snowflake.ID) error {
 	// probably not the best idea, but the fastest way to remove a dead role
 	// alternatively drop it on next update, but meh
-	if id == g.ID { return APIERR_UNKNOWN_ROLE }
+	if id == g.ID {
+		return APIERR_UNKNOWN_ROLE
+	}
 	gmc := DB.Core.C("guildmembers")
 	_, err := gmc.UpdateAll(bson.M{"guild_id": g.ID}, bson.M{"$pull": bson.M{"roles": id}})
 	if err != nil {
@@ -431,6 +486,9 @@ func (g *Guild) Save(flags ...bool /* membersOnly, featureList bool */) error {
 		if err != nil {
 			return err
 		}
+	}
+	if len(flags) == 0 {
+		return c.UpdateId(g.ID, bson.M{"$set": g})
 	}
 	return nil
 }
@@ -475,16 +533,16 @@ func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID, forCreateEv
 		}
 	}
 
-	out.Members = []*APITypeGuildMember{}
 	out.Presences = []*APITypePresenceUpdate{}
 	if forCreateEvent {
+		outmems := []*APITypeGuildMember{}
 		mems, err := g.Members(-1, 0)
 		if err != nil {
 			panic("Unexpected error: can't access list of guild members")
 		}
 		for _, v := range mems {
 			mem := v.ToAPI()
-			out.Members = append(out.Members, mem)
+			outmems = append(outmems, mem)
 			psn, err := GetPresenceForUser(v.UserID)
 			if err == nil {
 				out.Presences = append(out.Presences, &APITypePresenceUpdate{
@@ -497,7 +555,7 @@ func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID, forCreateEv
 				})
 			}
 		}
-
+		out.Members = &outmems
 		out.Channels = []APITypeAnyChannel{}
 		gchs, err := g.Channels()
 		if err != nil {

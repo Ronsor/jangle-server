@@ -238,8 +238,22 @@ func (c *Channel) Guild() (*Guild, error) {
 
 func (c *Channel) SetPermissionOverwrites(po []*PermissionOverwrite, u *User) error {
 	// TODO: actually check stuff
-	if !c.GetPermissions(u).Has(PERM_ADMINISTRATOR) {
-		return fmt.Errorf("Permission denied")
+	if c.IsGuild() {
+		g, err := c.Guild()
+		if err != nil {
+			return err
+		}
+		roles := []snowflake.ID{}
+		for _, v := range po {
+			roles = append(roles, v.ID)
+		}
+		mem, err := g.GetMember(u.ID)
+		if err != nil {
+			return err
+		}
+		if g.OwnerID != u.ID && !g.CanSetRoles(mem.Roles, roles) {
+			return fmt.Errorf("Permission denied")
+		}
 	}
 	c.PermissionOverwrites = map[string]*PermissionOverwrite{}
 	for _, v := range po { c.PermissionOverwrites[v.ID.String()] = v }

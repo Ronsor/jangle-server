@@ -13,6 +13,7 @@ bot.on("ready", function(event) {
 	console.log("Connected!");
 	console.log("Logged in as: ");
 	console.log(bot.username + " - (" + bot.id + ")");
+	console.log(event.t);
 });
 
 bot.on("message", function(user, userID, channelID, message, event) {

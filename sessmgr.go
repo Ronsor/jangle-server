@@ -15,7 +15,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-var SessSub = pubsub.New(16)
+var SessSub = pubsub.New(64)
 
 func msDecodeBSON(in, out interface{}) error {
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{TagName: "bson", Result: out})

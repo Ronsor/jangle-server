@@ -150,15 +150,6 @@ func InitRestChannel(r *router.Router) {
 	r.PATCH("/api/v6/channels/:cid", APIReqPutPatchChannelsCidFn)
 	r.PUT("/api/v6/channels/:cid", APIReqPutPatchChannelsCidFn)
 
-	type APIReqPostChannelsCidMessages struct {
-		Content     string                `json:"content" validate:"required_without_all=Embed File,max=3072"`
-		Nonce       interface{}           `json:"nonce" validate:"max=32"`
-		TTS         bool                  `json:"tts"`
-		Embed       *MessageEmbed         `json:"embed"`
-		PayloadJson string                `json:"payload_json"`
-		File        *multipart.FileHeader `json:"file"`
-	}
-
 	r.POST("/api/v6/channels/:cid/typing", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		cid := c.UserValue("cid").(string)
@@ -188,14 +179,23 @@ func InitRestChannel(r *router.Router) {
 		c.SetStatusCode(204)
 	}, RL_SENDMSG)))
 
+	type APIReqPostChannelsCidMessages struct {
+		Content     string                `json:"content" validate:"required_without_all=Embed File,max=3072"`
+		Nonce       interface{}           `json:"nonce" validate:"omitempty,max=32"`
+		TTS         bool                  `json:"tts"`
+		Embed       *MessageEmbed         `json:"embed"`
+		PayloadJson string                `json:"payload_json"`
+		File        *multipart.FileHeader `json:"file"`
+	}
+
 	// Why is this so convoluted Discord? multipart/form-data, application/json, "payload_json"????
 	r.POST("/api/v6/channels/:cid/messages", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		defer c.Request.RemoveMultipartFormFiles()
 		me := c.UserValue("m:user").(*User)
 		var req APIReqPostChannelsCidMessages
 		cid := c.UserValue("cid").(string)
-		if util.ReadPostAny(c, &req) != nil {
-			util.WriteJSONStatus(c, 400, &APIResponseError{0, "Malformed request body"})
+		if err := util.ReadPostAny(c, &req); err != nil {
+			util.WriteJSONStatus(c, 400, &APIResponseError{0, "Bad request:" + err.Error()})
 			return
 		}
 

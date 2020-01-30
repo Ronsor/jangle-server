@@ -102,7 +102,7 @@ type APITypeMessageReaction struct {
 	Emoji *APITypeEmoji `json:"emoji"`
 	Count int           `json:"count"`
 	Me    bool          `json:"me"`
-	user  *User         `json:"-"`
+	user  *User
 }
 
 // "Safe" Message type
@@ -210,7 +210,7 @@ type APITypeGuild struct {
 	Unavailable     bool         `json:"unavailable,omitempty"`
 
 	MemberCount  int                      `json:"member_count,omitempty"`
-	Members      []*APITypeGuildMember    `json:"members,omitempty"`
+	Members      *[]*APITypeGuildMember    `json:"members,omitempty"`
 	Channels     []APITypeAnyChannel      `json:"channels,omitempty"`
 	Presences    []*APITypePresenceUpdate `json:"presences,omitempty"`
 	MaxPresences int                      `json:"max_presences,omitempty"` // Should be ~5k (maybe 10k)?

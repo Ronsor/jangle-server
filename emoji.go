@@ -32,7 +32,6 @@ func (e *Emoji) String() string {
 	} else {
 		return e.Name + ":" + e.ID.String()
 	}
-	panic("unreachable")
 	return ""
 }
 
