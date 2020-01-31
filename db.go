@@ -7,7 +7,7 @@ import (
 	"github.com/globalsign/mgo"
 )
 
-var dbSess *mgo.Session
+var dbSess, dbSessMsg *mgo.Session
 var DB = struct {
 	Core, Msg, Files *mgo.Database
 }{}
@@ -19,11 +19,17 @@ func InitDB() {
 	}
 	// TODO: separate DB server for messages, and files
 	sess.SetSafe(&mgo.Safe{WMode: "majority"})
-	DB.Msg = sess.DB("")
 	DB.Core = sess.DB("")
 	DB.Files = sess.DB("")
 	dbSess = sess
 
+	sessMsg, err := mgo.Dial(*flgMsgMongoDB)
+	if err != nil {
+		log.Fatal(err)
+	}
+	sessMsg.SetSafe(&mgo.Safe{WMode: "majority"})
+	DB.Msg = sessMsg.DB("")
+	dbSessMsg = sessMsg
 	// Add collections and indexes
 	//DB.Core.C("users").EnsureIndex(mgo.Index{Name:"idx_guilds", Key: []string{"guildids"}})
 	DB.Core.C("users").EnsureIndex(mgo.Index{Name: "idx_emails", Key: []string{"email"}, Unique: true})

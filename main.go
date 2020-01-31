@@ -18,13 +18,16 @@ const VERSION = "0.1.1/v6"
 var (
 	flgListen  = flag.String("listen", "0.0.0.0:8081", "Listen address for API server")
 	flgMongoDB = flag.String("mongo", "mongodb://127.0.0.1:3600/?maxIdleTimeMS=0", "MongoDB URI")
-	flgCdnBucket = flag.String("cdnbucket", "local:", "CDN HTTP PUT bucket base URL")
+	flgMsgMongoDB = flag.String("mongoMessages", "primary:", "MongoDB URI for messages database")
 	flgSmtpServer = flag.String("smtp", "127.0.0.1:25", "SMTP server for sending emails")
 
-	flgAllowReg   = flag.Bool("allowRegistration", false, "Allow registration of accounts on this server")
-	flgGatewayUrl = flag.String("apiGatewayUrl", "", "Specify round-robin URL for Gateway v6")
+	flgAllowReg   = flag.Bool("allowRegistration", true, "Allow registration of accounts on this server")
+	flgGatewayUrl = flag.String("apiGatewayUrl", "", "Specify URL for Gateway v6")
 	flgStaging    = flag.Bool("staging", false, "Add dummy data for testing")
 	flgNoPanic    = flag.Bool("nopanic", true, "Catch all panics in API handlers")
+
+	flgEnableFileServer = flag.Bool("enableFileServer", true, "Enable file server ('cdn' resources)")
+	flgFileServerPath = flag.String("fileServerPath", "/tmp/janglefileserver", "File server path")
 
 	flgObjCacheLimit = flag.Int("cachelimit", 4096, "Object cache limit")
 
@@ -44,6 +47,8 @@ func main() {
 	}
 	util.NoPanic = *flgNoPanic
 	gCache.Limit(*flgObjCacheLimit)
+	if *flgMsgMongoDB == "primary:" { flgMsgMongoDB = flgMongoDB }
+
 	log.Printf("info: jangle-jangled/%s loading...", VERSION)
 
 	flake, _ = snowflake.NewNode(*flgNode)
