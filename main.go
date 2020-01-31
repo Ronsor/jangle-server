@@ -18,6 +18,8 @@ const VERSION = "0.1.1/v6"
 var (
 	flgListen  = flag.String("listen", "0.0.0.0:8081", "Listen address for API server")
 	flgMongoDB = flag.String("mongo", "mongodb://127.0.0.1:3600/?maxIdleTimeMS=0", "MongoDB URI")
+	flgCdnBucket = flag.String("cdnbucket", "local:", "CDN HTTP PUT bucket base URL")
+	flgSmtpServer = flag.String("smtp", "127.0.0.1:25", "SMTP server for sending emails")
 
 	flgAllowReg   = flag.Bool("allowRegistration", false, "Allow registration of accounts on this server")
 	flgGatewayUrl = flag.String("apiGatewayUrl", "", "Specify round-robin URL for Gateway v6")

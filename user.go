@@ -111,6 +111,14 @@ func GetUserByID(ID snowflake.ID) (u *User, e error) {
 	return
 }
 
+func GetUserByEmail(email string) (*User, error) {
+	var u2 User
+	c := DB.Core.C("users")
+	err := c.Find(bson.M{"email": email}).One(&u2)
+	if err != nil { return nil, err }
+	return &u2, nil
+}
+
 // GetUserByToken returns a user using an authentication token
 func GetUserByToken(token string) (*User, error) {
 	if *flgStaging {

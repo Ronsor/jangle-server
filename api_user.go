@@ -64,7 +64,7 @@ func InitRestUser(r *router.Router) {
 
 	r.GET("/api/v6/users/:uid/channels", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
-		// Something *should* be done here
+		// Something *should* be done here... and now I forget what
 		chs, err := me.Channels()
 		if err != nil {
 			panic(err)

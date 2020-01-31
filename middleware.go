@@ -73,7 +73,7 @@ func MwRl(orig func(c *fasthttp.RequestCtx), clazz *RateLimitClass) func(c *fast
 		return lt.(*rate.Limiter)
 	}
 	return func(c *fasthttp.RequestCtx) {
-		factor := c.RemoteIP().String()
+		factor := util.GetIP(c)
 		if usr, ok := c.UserValue("m:user").(*User); ok {
 			factor = usr.ID.String()
 		}

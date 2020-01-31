@@ -1,6 +1,7 @@
 package util
 
 import (
+	"strings"
 	"encoding/json"
 
 	"github.com/mitchellh/mapstructure"
@@ -63,4 +64,13 @@ func WriteJSON(c *fasthttp.RequestCtx, i interface{}) error {
 func WriteJSONStatus(c *fasthttp.RequestCtx, n int, i interface{}) error {
 	c.SetStatusCode(n)
 	return WriteJSON(c, i)
+}
+
+func GetIP(c *fasthttp.RequestCtx) string {
+	fwdip := c.Request.Header.Peek("X-Forwarded-For")
+	if fwdip == nil || string(fwdip) == "" {
+		return c.RemoteIP().String()
+	}
+	s := strings.Split(string(fwdip), "/")
+	return strings.TrimSpace(s[0])
 }
