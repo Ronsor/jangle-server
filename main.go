@@ -13,7 +13,7 @@ import (
 	"github.com/vharitonsky/iniflags"
 )
 
-const VERSION = "0.1.1/v6"
+const VERSION = "0.1.1/v6 \"I can't believe it's not Discord!\" Edition"
 
 var (
 	flgListen  = flag.String("listen", "0.0.0.0:8081", "Listen address for API server")
@@ -26,7 +26,7 @@ var (
 	flgStaging    = flag.Bool("staging", false, "Add dummy data for testing")
 	flgNoPanic    = flag.Bool("nopanic", true, "Catch all panics in API handlers")
 
-	flgEnableFileServer = flag.Bool("enableFileServer", true, "Enable file server ('cdn' resources)")
+	flgEnableFileServer = flag.Bool("enableFileServer", true, "Enable file server (BogusCDN)")
 	flgFileServerPath = flag.String("fileServerPath", "/tmp/janglefileserver", "File server path")
 
 	flgObjCacheLimit = flag.Int("cachelimit", 4096, "Object cache limit")
@@ -45,6 +45,7 @@ func main() {
 		syscall.Setgid(65534)
 		syscall.Setuid(65534)
 	}
+
 	util.NoPanic = *flgNoPanic
 	gCache.Limit(*flgObjCacheLimit)
 	if *flgMsgMongoDB == "primary:" { flgMsgMongoDB = flgMongoDB }
@@ -70,7 +71,7 @@ func main() {
 		}
 	}
 
-	r.GET("/version.txt", func(c *fasthttp.RequestCtx) { c.WriteString(VERSION) })
+	r.GET("/api/v6/version.txt", func(c *fasthttp.RequestCtx) { c.WriteString(VERSION) })
 	InitRestUser(r)
 	InitRestChannel(r)
 	InitRestGuild(r)

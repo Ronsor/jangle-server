@@ -180,6 +180,7 @@ type APITypeGuild struct {
 	Name   string       `json:"name"`
 	Icon   string       `json:"icon,omitempty"`
 	Splash string       `json:"splash,omitempty"`
+	NSFW bool `json:"nsfw,omitempty"`
 
 	Owner   bool         `json:"owner,omitempty"`
 	OwnerID snowflake.ID `json:"owner_id,string"`

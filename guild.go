@@ -187,6 +187,8 @@ type Guild struct {
 	Banner          string `bson:"banner"`
 	PremiumTier     int    `bson:"premium_tier"`
 	PreferredLocale string `bson:"preferred_locale"`
+
+	NSFW bool `bson:"nsfw"`
 }
 
 func CreateGuild(u *User, g *Guild) (*Guild, error) {
@@ -287,6 +289,17 @@ func (g *Guild) AddFeature(feat string) error {
 	return g.Save(false, true /* featureList */)
 }
 
+func (g *Guild) DelFeature(feat string) error {
+	for k, v := range g.Features {
+		if v != feat {
+			continue
+		}
+		g.Features[k] = g.Features[len(g.Features)-1]
+		g.Features = g.Features[:len(g.Features)-1]
+	}
+	return g.Save(false, true)
+}
+
 func (g *Guild) HasFeature(feat string) bool {
 	for _, v := range g.Features {
 		if v == feat {
@@ -326,18 +339,19 @@ func (g *Guild) SetMember(extra *GuildMember, opts ...interface{} /* checkBans, 
 	return err
 }
 
-func (g *Guild) AddMember(UserID snowflake.ID, checkBans bool) error {
-	return g.SetMember(&GuildMember{UserID: UserID}, checkBans, true, true)
+func (g *Guild) AddMember(userID snowflake.ID, checkBans bool) error {
+	return g.SetMember(&GuildMember{UserID: userID}, checkBans, true, true)
 }
 
-func (g *Guild) GetMember(UserID snowflake.ID) (*GuildMember, error) {
-	//m, ok := g.Members[UserID.String()]
-	//if !ok {
-	//	return nil, APIERR_UNKNOWN_MEMBER
-	//}
+func (g *Guild) HasMember(userID snowflake.ID) bool {
+	_, err := g.GetMember(userID)
+	return err == nil
+}
+
+func (g *Guild) GetMember(userID snowflake.ID) (*GuildMember, error) {
 	c := DB.Core.C("guildmembers")
 	var m GuildMember
-	err := c.Find(bson.M{"user": UserID, "guild_id": g.ID}).One(&m)
+	err := c.Find(bson.M{"user": userID, "guild_id": g.ID}).One(&m)
 	if err != nil {
 		return nil, err
 	}
@@ -512,6 +526,7 @@ func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID, forCreateEv
 		Owner:                       oUid == g.OwnerID,
 		OwnerID:                     g.OwnerID,
 		Permissions:                 perm, // TODO
+		NSFW: g.NSFW,
 		Region:                      g.Region,
 		DefaultMessageNotifications: g.DefaultMessageNotifications,
 		ExplicitContentFilter:       g.ExplicitContentFilter,

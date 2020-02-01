@@ -146,6 +146,7 @@ func (m *Message) ToAPI() (ret *APITypeMessage) {
 	} else {
 		ret.Author = m.Author.ToAPI(true)
 	}
+	ret.Attachments = []interface{}{}
 	ret.Mentions = []*APITypeUser{}
 	ret.Reactions = []*APITypeMessageReaction{}
 	for _, v := range m.Mentions {

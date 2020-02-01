@@ -30,6 +30,83 @@ func InitRestGuild(r *router.Router) {
 		util.WriteJSON(c, g.ToAPI(me.ID, false))
 	}, RL_GETINFO)))
 
+	type APIReqPatchGuildsGid struct {
+		Name                        *string              `json:"name" validate:"min=2,max=100"`
+		Region                      *string              `json:"region,omitempty"` // Ignored
+		Icon                        *string              `json:"icon,omitempty" validate:"omitempty,datauri"`
+		VerificationLevel           *int                 `json:"verification_level,omitempty"`
+		DefaultMessageNotifications *int                 `json:"default_message_notifications,omitempty" validate:"min=0,max=1"`
+		ExplicitContentFilter       *int                 `json:"explicit_content_filter" validate:"min=0,max=0"`
+		Public *bool `json:"public"`
+		NSFW *bool `json:"nsfw"`
+		OwnerID *snowflake.ID `json:"owner_id"`
+		SystemChannelID *snowflake.ID `json:"system_channel_id"`
+		Features *[]string `json:"features"`
+	}
+
+	r.PATCH("/api/v6/guilds/:gid", MwTkA(MwRl(func (c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+
+		var req APIReqPatchGuildsGid
+		if util.ReadPostJSON(c, &req) != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+
+		gid := c.UserValue("gid").(string)
+		snow, err := snowflake.ParseString(gid)
+		if err != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+		g, err := GetGuildByID(snow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_GUILD)
+			return
+		}
+
+		if req.Name != nil { g.Name = *req.Name }
+		if req.VerificationLevel != nil { g.VerificationLevel = *req.VerificationLevel }
+		if req.DefaultMessageNotifications != nil { g.DefaultMessageNotifications = *req.DefaultMessageNotifications }
+		if req.NSFW != nil { g.NSFW = *req.NSFW }
+		if req.Public != nil {
+			if *req.Public {
+				if err := g.AddFeature(GUILD_FEATURE_DISCOVERABLE); err != nil { panic(err) }
+			} else {
+				if err := g.DelFeature(GUILD_FEATURE_DISCOVERABLE); err != nil { panic(err) }
+			}
+		}
+		if req.OwnerID != nil {
+			if !g.HasMember(*req.OwnerID) {
+				util.WriteJSONStatus(c, 400, APIERR_UNKNOWN_MEMBER)
+				return
+			}
+			g.OwnerID = *req.OwnerID
+		}
+		if req.SystemChannelID != nil {
+			if ch, err := GetChannelByID(*req.SystemChannelID); err != nil || ch.GuildID != snow {
+				util.WriteJSONStatus(c, 400, APIERR_UNKNOWN_CHANNEL)
+				return
+			}
+			g.SystemChannelID = *req.SystemChannelID
+		}
+		if req.Features != nil {
+			if me.Flags & USER_FLAG_STAFF == 0 {
+				util.WriteJSONStatus(c, 403, APIERR_MISSING_ACCESS)
+				return
+			}
+			g.Features = *req.Features
+		}
+
+		err = g.Save()
+		if err != nil {
+			panic(err)
+		}
+
+		util.WriteJSON(c, g)
+
+	}, RL_SETINFO)))
+
 	r.DELETE("/api/v6/guilds/:gid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		gid := c.UserValue("gid").(string)

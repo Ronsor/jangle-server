@@ -19,8 +19,6 @@ const (
 	USER_FLAG_STAFF        = 1 << 0
 	USER_FLAG_PARTNER      = 1 << 1
 	USER_FLAG_EARLYADOPTER = 1 << 24
-
-	USER_FLAG_UNVERIFIED = 1 << 25
 	// The rest are unused
 )
 
@@ -78,7 +76,6 @@ func CreateUser(username, email, password string) (*User, error) {
 		Username:     username,
 		Email:        email,
 		PasswordHash: util.CryptPass(password),
-		Flags:        USER_FLAG_UNVERIFIED,
 		Settings: &UserSettings{
 			Locale: "en-US",
 		},

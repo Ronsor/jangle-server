@@ -181,7 +181,7 @@ func InitRestChannel(r *router.Router) {
 
 	type APIReqPostChannelsCidMessages struct {
 		Content     string                `json:"content" validate:"required_without_all=Embed File,max=3072"`
-		Nonce       interface{}           `json:"nonce" validate:"omitempty,max=32"`
+		Nonce       interface{}           `json:"nonce"`
 		TTS         bool                  `json:"tts"`
 		Embed       *MessageEmbed         `json:"embed"`
 		PayloadJson string                `json:"payload_json"`
@@ -197,6 +197,10 @@ func InitRestChannel(r *router.Router) {
 		if err := util.ReadPostAny(c, &req); err != nil {
 			util.WriteJSONStatus(c, 400, &APIResponseError{0, "Bad request:" + err.Error()})
 			return
+		}
+
+		if str, ok := req.Nonce.(string); ok && len(str) > 100 {
+			panic("Denial of service attack detected.")
 		}
 
 		snow, err := snowflake.ParseString(cid)
