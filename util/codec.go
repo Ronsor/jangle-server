@@ -42,7 +42,8 @@ func MakeWsChan(ws *websocket.Conn, c Codec) *WsChan {
 	}
 	go func() {
 		for i := range w.sendChan {
-			w.Codec.Send(w.Conn, i)
+			err := w.Codec.Send(w.Conn, i)
+			if err != nil { w.getError = err }
 		}
 	} ()
 	go func() {

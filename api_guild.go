@@ -14,7 +14,7 @@ import (
 func InitRestGuild(r *router.Router) {
 	log.Println("Init /guilds Endpoints")
 
-	r.GET("/api/v6/guilds/:gid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.GET("/guilds/:gid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		gid := c.UserValue("gid").(string)
 		snow, err := snowflake.ParseString(gid)
@@ -31,20 +31,20 @@ func InitRestGuild(r *router.Router) {
 	}, RL_GETINFO)))
 
 	type APIReqPatchGuildsGid struct {
-		Name                        *string              `json:"name" validate:"min=2,max=100"`
-		Region                      *string              `json:"region,omitempty"` // Ignored
-		Icon                        *string              `json:"icon,omitempty" validate:"omitempty,datauri"`
-		VerificationLevel           *int                 `json:"verification_level,omitempty"`
-		DefaultMessageNotifications *int                 `json:"default_message_notifications,omitempty" validate:"min=0,max=1"`
-		ExplicitContentFilter       *int                 `json:"explicit_content_filter" validate:"min=0,max=0"`
-		Public *bool `json:"public"`
-		NSFW *bool `json:"nsfw"`
-		OwnerID *snowflake.ID `json:"owner_id"`
-		SystemChannelID *snowflake.ID `json:"system_channel_id"`
-		Features *[]string `json:"features"`
+		Name                        *string       `json:"name" validate:"min=2,max=100"`
+		Region                      *string       `json:"region,omitempty"` // Ignored
+		Icon                        *string       `json:"icon,omitempty" validate:"omitempty,datauri"`
+		VerificationLevel           *int          `json:"verification_level,omitempty"`
+		DefaultMessageNotifications *int          `json:"default_message_notifications,omitempty" validate:"min=0,max=1"`
+		ExplicitContentFilter       *int          `json:"explicit_content_filter" validate:"min=0,max=0"`
+		Public                      *bool         `json:"public"`
+		NSFW                        *bool         `json:"nsfw"`
+		OwnerID                     *snowflake.ID `json:"owner_id"`
+		SystemChannelID             *snowflake.ID `json:"system_channel_id"`
+		Features                    *[]string     `json:"features"`
 	}
 
-	r.PATCH("/api/v6/guilds/:gid", MwTkA(MwRl(func (c *fasthttp.RequestCtx) {
+	r.PATCH("/guilds/:gid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 
 		var req APIReqPatchGuildsGid
@@ -65,15 +65,27 @@ func InitRestGuild(r *router.Router) {
 			return
 		}
 
-		if req.Name != nil { g.Name = *req.Name }
-		if req.VerificationLevel != nil { g.VerificationLevel = *req.VerificationLevel }
-		if req.DefaultMessageNotifications != nil { g.DefaultMessageNotifications = *req.DefaultMessageNotifications }
-		if req.NSFW != nil { g.NSFW = *req.NSFW }
+		if req.Name != nil {
+			g.Name = *req.Name
+		}
+		if req.VerificationLevel != nil {
+			g.VerificationLevel = *req.VerificationLevel
+		}
+		if req.DefaultMessageNotifications != nil {
+			g.DefaultMessageNotifications = *req.DefaultMessageNotifications
+		}
+		if req.NSFW != nil {
+			g.NSFW = *req.NSFW
+		}
 		if req.Public != nil {
 			if *req.Public {
-				if err := g.AddFeature(GUILD_FEATURE_DISCOVERABLE); err != nil { panic(err) }
+				if err := g.AddFeature(GUILD_FEATURE_DISCOVERABLE); err != nil {
+					panic(err)
+				}
 			} else {
-				if err := g.DelFeature(GUILD_FEATURE_DISCOVERABLE); err != nil { panic(err) }
+				if err := g.DelFeature(GUILD_FEATURE_DISCOVERABLE); err != nil {
+					panic(err)
+				}
 			}
 		}
 		if req.OwnerID != nil {
@@ -91,7 +103,7 @@ func InitRestGuild(r *router.Router) {
 			g.SystemChannelID = *req.SystemChannelID
 		}
 		if req.Features != nil {
-			if me.Flags & USER_FLAG_STAFF == 0 {
+			if me.Flags&USER_FLAG_STAFF == 0 {
 				util.WriteJSONStatus(c, 403, APIERR_MISSING_ACCESS)
 				return
 			}
@@ -107,7 +119,7 @@ func InitRestGuild(r *router.Router) {
 
 	}, RL_SETINFO)))
 
-	r.DELETE("/api/v6/guilds/:gid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.DELETE("/guilds/:gid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		gid := c.UserValue("gid").(string)
 		snow, err := snowflake.ParseString(gid)
@@ -121,7 +133,7 @@ func InitRestGuild(r *router.Router) {
 			return
 		}
 
-		if g.OwnerID != me.ID && me.Flags & USER_FLAG_STAFF == 0 {
+		if g.OwnerID != me.ID && me.Flags&USER_FLAG_STAFF == 0 {
 			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
 			return
 		}
@@ -133,7 +145,7 @@ func InitRestGuild(r *router.Router) {
 		c.SetStatusCode(204)
 	}, RL_DELOBJ)))
 
-	r.GET("/api/v6/guilds/:gid/members", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.GET("/guilds/:gid/members", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		//me := c.UserValue("m:user").(*User)
 		//TODO: check if user is in guild
 		gid := c.UserValue("gid").(string)
@@ -160,7 +172,7 @@ func InitRestGuild(r *router.Router) {
 		util.WriteJSON(c, o)
 	}, RL_GETINFO)))
 
-	r.GET("/api/v6/guilds/:gid/members/:uid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.GET("/guilds/:gid/members/:uid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		gid := c.UserValue("gid").(string)
 		uid := c.UserValue("uid").(string)
 		usnow, err := snowflake.ParseString(uid)
@@ -186,7 +198,7 @@ func InitRestGuild(r *router.Router) {
 		util.WriteJSON(c, p.ToAPI())
 	}, RL_GETINFO)))
 
-	r.DELETE("/api/v6/guilds/:gid/members/:uid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.DELETE("/guilds/:gid/members/:uid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		gid := c.UserValue("gid").(string)
 		snow, err := snowflake.ParseString(gid)
@@ -217,7 +229,7 @@ func InitRestGuild(r *router.Router) {
 		// TODO: accept arguments here
 	}
 
-	r.PUT("/api/v6/guilds/:gid/members/:uid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.PUT("/guilds/:gid/members/:uid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		gid := c.UserValue("gid").(string)
 		snow, err := snowflake.ParseString(gid)
@@ -251,11 +263,11 @@ func InitRestGuild(r *router.Router) {
 	}, RL_NEWOBJ), "uid"))
 
 	type APIReqPatchGuildsGidMembersUid struct {
-		Nick *string `json:"nick,omitempty" validate:"min=0,max=32,omitempty"`
+		Nick  *string         `json:"nick,omitempty" validate:"min=0,max=32,omitempty"`
 		Roles *[]snowflake.ID `json:"roles,omitempty" validate:"max=250,omitempty"`
 	}
 
-	r.PATCH("/api/v6/guilds/:gid/members/:uid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.PATCH("/guilds/:gid/members/:uid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 
 		var req APIReqPatchGuildsGidMembersUid
@@ -319,7 +331,7 @@ func InitRestGuild(r *router.Router) {
 		Nick string `json:"nick" validate:"min=0,max=32"`
 	}
 
-	r.PATCH("/api/v6/guilds/:gid/members/:uid/nick", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.PATCH("/guilds/:gid/members/:uid/nick", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 
 		var req APIReqPatchGuildsGidMembersMeNick
@@ -358,7 +370,7 @@ func InitRestGuild(r *router.Router) {
 		util.WriteJSON(c, req)
 	}, RL_SETINFO), "uid"))
 
-	r.GET("/api/v6/guilds/:gid/channels", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.GET("/guilds/:gid/channels", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		gid := c.UserValue("gid").(string)
 		snow, err := snowflake.ParseString(gid)
@@ -379,7 +391,7 @@ func InitRestGuild(r *router.Router) {
 		Position int          `json:"position"`
 	}
 
-	r.PATCH("/api/v6/guilds/:gid/channels", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.PATCH("/guilds/:gid/channels", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 
 		var req APIReqPatchGuildsGidChannels
@@ -427,7 +439,7 @@ func InitRestGuild(r *router.Router) {
 		NSFW                 bool                          `json:"nsfw"`
 	}
 
-	r.POST("/api/v6/guilds/:gid/channels", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.POST("/guilds/:gid/channels", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 
 		var req APIReqPostGuildsGidChannels
@@ -521,7 +533,7 @@ func InitRestGuild(r *router.Router) {
 		Public                      bool                `json:"public,omitempty"`
 	}
 
-	r.POST("/api/v6/guilds", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.POST("/guilds", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 
 		var req APIReqPostGuilds

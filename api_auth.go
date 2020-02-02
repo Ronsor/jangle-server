@@ -7,8 +7,8 @@ import (
 	"jangled/util"
 
 	"github.com/fasthttp/router"
-	"github.com/valyala/fasthttp"
 	"github.com/globalsign/mgo/bson"
+	"github.com/valyala/fasthttp"
 )
 
 func InitRestAuth(r *router.Router) {
@@ -17,10 +17,10 @@ func InitRestAuth(r *router.Router) {
 	type APIReqPostRegister struct {
 		Username string `json:"username" validate:"min=2,max=32"`
 		Password string `json:"password" validate:"min=6"`
-		Email string `json:"email" validate:"email"`
+		Email    string `json:"email" validate:"email"`
 	}
 
-	r.POST("/api/v6/auth/register", MwRl(func (c *fasthttp.RequestCtx) {
+	r.POST("/auth/register", MwRl(func(c *fasthttp.RequestCtx) {
 		var req APIReqPostRegister
 		if err := util.ReadPostJSON(c, &req); err != nil {
 			util.WriteJSONStatus(c, 400, bson.M{"email": "Invalid email address", "_raw": err.Error()})
@@ -34,12 +34,12 @@ func InitRestAuth(r *router.Router) {
 	}, &RateLimitClass{1, 1}))
 
 	type APIReqPostLogin struct {
-		Email string `json:"email"`
+		Email    string `json:"email"`
 		Password string `json:"password"`
-		Lifetime int `json:"lifetime" validate:"omitempty,max=168"`
+		Lifetime int    `json:"lifetime" validate:"omitempty,max=168"`
 	}
 
-	r.POST("/api/v6/auth/login", MwRl(func (c *fasthttp.RequestCtx) {
+	r.POST("/auth/login", MwRl(func(c *fasthttp.RequestCtx) {
 		var req APIReqPostLogin
 		if err := util.ReadPostJSON(c, &req); err != nil {
 			util.WriteJSONStatus(c, 400, bson.M{"email": "Invalid email address", "_raw": err.Error()})
@@ -51,7 +51,9 @@ func InitRestAuth(r *router.Router) {
 			return
 		}
 
-		if req.Lifetime == 0 { req.Lifetime = 168 }
+		if req.Lifetime == 0 {
+			req.Lifetime = 168
+		}
 
 		if !util.VerifyPass(user.PasswordHash, req.Password) {
 			util.WriteJSONStatus(c, 401, bson.M{"password": "Incorrect password."})

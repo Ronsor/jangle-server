@@ -15,12 +15,14 @@ type responseGetGateway struct {
 
 // Gateway opcodes
 const (
-	GW_OP_HEARTBEAT_ACK = 11
-	GW_OP_HELLO         = 10
-	GW_OP_UPDATE_STATUS = 3
-	GW_OP_IDENTIFY      = 2
-	GW_OP_HEARTBEAT     = 1
-	GW_OP_DISPATCH      = 0
+	GW_OP_HEARTBEAT_ACK   = 11
+	GW_OP_HELLO           = 10
+	GW_OP_INVALID_SESSION = 9
+	GW_OP_RESUME          = 6
+	GW_OP_UPDATE_STATUS   = 3
+	GW_OP_IDENTIFY        = 2
+	GW_OP_HEARTBEAT       = 1
+	GW_OP_DISPATCH        = 0
 )
 
 // Gateway events
@@ -135,6 +137,13 @@ type gwPktDataUpdateStatus struct {
 	Game   interface{}   `json:"game"`
 	Status string        `json:"status"`
 	AFK    bool          `json:"afk"`
+}
+
+// OP_RESUME packet data
+type gwPktDataResume struct {
+	Seq       int          `json:"seq"`
+	SessionID snowflake.ID `json:"session_id"`
+	Token     string       `json:"token"`
 }
 
 // Ready event packet data

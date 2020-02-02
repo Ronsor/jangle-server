@@ -112,7 +112,9 @@ func GetUserByEmail(email string) (*User, error) {
 	var u2 User
 	c := DB.Core.C("users")
 	err := c.Find(bson.M{"email": email}).One(&u2)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	return &u2, nil
 }
 

@@ -180,7 +180,7 @@ type APITypeGuild struct {
 	Name   string       `json:"name"`
 	Icon   string       `json:"icon,omitempty"`
 	Splash string       `json:"splash,omitempty"`
-	NSFW bool `json:"nsfw,omitempty"`
+	NSFW   bool         `json:"nsfw,omitempty"`
 
 	Owner   bool         `json:"owner,omitempty"`
 	OwnerID snowflake.ID `json:"owner_id,string"`
@@ -211,7 +211,7 @@ type APITypeGuild struct {
 	Unavailable     bool         `json:"unavailable,omitempty"`
 
 	MemberCount  int                      `json:"member_count,omitempty"`
-	Members      *[]*APITypeGuildMember    `json:"members,omitempty"`
+	Members      *[]*APITypeGuildMember   `json:"members,omitempty"`
 	Channels     []APITypeAnyChannel      `json:"channels,omitempty"`
 	Presences    []*APITypePresenceUpdate `json:"presences,omitempty"`
 	MaxPresences int                      `json:"max_presences,omitempty"` // Should be ~5k (maybe 10k)?

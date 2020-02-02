@@ -13,7 +13,7 @@ import (
 func InitRestUser(r *router.Router) {
 	log.Println("Init /users Endpoints")
 
-	r.GET("/api/v6/users/:uid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.GET("/users/:uid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		uid := c.UserValue("uid").(string)
 		if uid == "@me" {
@@ -33,7 +33,7 @@ func InitRestUser(r *router.Router) {
 		}
 	}, RL_GETINFO)))
 
-	r.GET("/api/v6/users/:uid/settings", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.GET("/users/:uid/settings", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		util.WriteJSON(c, me.Settings)
 	}, RL_GETINFO), "uid"))
@@ -42,7 +42,7 @@ func InitRestUser(r *router.Router) {
 		RecipientID snowflake.ID `json:"recipient_id"`
 	}
 
-	r.POST("/api/v6/users/:uid/channels", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.POST("/users/:uid/channels", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		var req APIReqPostUsersUidChannels
 		if util.ReadPostJSON(c, &req) != nil {
@@ -62,7 +62,7 @@ func InitRestUser(r *router.Router) {
 		util.WriteJSON(c, ch.ToAPI().(*APITypeDMChannel))
 	}, RL_NEWOBJ), "uid"))
 
-	r.GET("/api/v6/users/:uid/channels", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.GET("/users/:uid/channels", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		// Something *should* be done here... and now I forget what
 		chs, err := me.Channels()
@@ -78,7 +78,7 @@ func InitRestUser(r *router.Router) {
 		util.WriteJSON(c, out)
 	}, RL_GETINFO), "uid"))
 
-	r.GET("/api/v6/users/:uid/guilds", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.GET("/users/:uid/guilds", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		guilds, err := me.Guilds()
 		if err != nil {
@@ -91,7 +91,7 @@ func InitRestUser(r *router.Router) {
 		util.WriteJSON(c, out)
 	}, RL_GETINFO), "uid"))
 
-	r.DELETE("/api/v6/users/:uid/guilds/:gid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.DELETE("/users/:uid/guilds/:gid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		gid := c.UserValue("gid").(string)
 		snow, err := snowflake.ParseString(gid)

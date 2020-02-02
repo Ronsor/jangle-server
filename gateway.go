@@ -3,11 +3,12 @@ package main
 import (
 	"log"
 	"math/rand"
+	"sync"
 
-	"github.com/valyala/fasthttp"
-	//"github.com/bwmarrin/snowflake"
+	"github.com/bwmarrin/snowflake"
 	"github.com/fasthttp/router"
 	"github.com/fasthttp/websocket"
+	"github.com/valyala/fasthttp"
 
 	"jangled/util"
 )
@@ -17,13 +18,15 @@ type gwSession struct {
 	Identity *gwPktDataIdentify
 	Wsc      *util.WsChan
 	Seq      int
+	ID       snowflake.ID
+	Lock     sync.Mutex
 
 	EvtChan chan interface{}
 }
 
 func InitGateway(r *router.Router) {
 	log.Println("Init Gateway Module")
-	r.GET("/api/v6/gateway", func(c *fasthttp.RequestCtx) {
+	r.GET("/gateway", func(c *fasthttp.RequestCtx) {
 		gw := "ws://" + string(c.Host()) + "/gateway_ws6"
 		if *flgGatewayUrl != "" {
 			gw = *flgGatewayUrl
@@ -74,6 +77,7 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 			ws.Close()
 			return
 		}
+		sess.ID = flake.Generate()
 		sess.Identity = &d
 		sess.EvtChan = SessSub.Sub(sess.User.ID.String())
 
@@ -158,10 +162,21 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 			}
 		}
 		break
-	// TODO: resuming sessions
-	default:
-		panic("Not supported")
+	case GW_OP_RESUME:
+		var d gwPktDataResume
+		pkt.D(&d)
+		s2, ok := sessCache.Get(d.SessionID)
+		if !ok {
+			codec.Send(ws, mkGwPkt(GW_OP_INVALID_SESSION, false))
+			return
+		}
+
+		sess = s2.(*gwSession)
+		// TODO: care about d.Seq
+		codec.Send(ws, mkGwPkt(GW_OP_DISPATCH, true, sess.Seq, "RESUMED"))
+		sess.Seq++
 	}
+	sessCache.Set(sess.ID, sess)
 	log.Printf("Authenticated user: ID=%v", sess.User.ID)
 	wsc := util.MakeWsChan(ws, codec)
 	sess.Wsc = wsc
@@ -194,8 +209,8 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 				}
 			}
 			pkt.Seq = sess.Seq
-			wsc.Send(&pkt)
 			sess.Seq++
+			wsc.Send(&pkt)
 		}
 	}()
 	for {
@@ -205,6 +220,7 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 			break
 		}
 		RefreshPresenceForUser(sess.User.ID)
+		sessCache.Set(sess.ID, sess)
 		switch pkt.Op {
 		case GW_OP_HEARTBEAT:
 			wsc.Send(&gwPacket{Op: GW_OP_HEARTBEAT_ACK})
@@ -215,5 +231,4 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 			SetPresenceForUser(sess.User.ID, &dat)
 		}
 	}
-	ws.Close()
 }

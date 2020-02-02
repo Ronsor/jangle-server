@@ -18,7 +18,7 @@ import (
 func InitRestChannel(r *router.Router) {
 	log.Println("Init /channels Endpoints")
 
-	r.GET("/api/v6/channels/:cid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.GET("/channels/:cid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		cid := c.UserValue("cid").(string)
 		snow, err := snowflake.ParseString(cid)
@@ -40,7 +40,7 @@ func InitRestChannel(r *router.Router) {
 		util.WriteJSON(c, ch.ToAPI())
 	}, RL_GETINFO)))
 
-	r.DELETE("/api/v6/channels/:cid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.DELETE("/channels/:cid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		cid := c.UserValue("cid").(string)
 		snow, err := snowflake.ParseString(cid)
@@ -147,10 +147,10 @@ func InitRestChannel(r *router.Router) {
 		util.WriteJSON(c, ch.ToAPI())
 	}, RL_SETINFO))
 
-	r.PATCH("/api/v6/channels/:cid", APIReqPutPatchChannelsCidFn)
-	r.PUT("/api/v6/channels/:cid", APIReqPutPatchChannelsCidFn)
+	r.PATCH("/channels/:cid", APIReqPutPatchChannelsCidFn)
+	r.PUT("/channels/:cid", APIReqPutPatchChannelsCidFn)
 
-	r.POST("/api/v6/channels/:cid/typing", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.POST("/channels/:cid/typing", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		cid := c.UserValue("cid").(string)
 
@@ -189,7 +189,7 @@ func InitRestChannel(r *router.Router) {
 	}
 
 	// Why is this so convoluted Discord? multipart/form-data, application/json, "payload_json"????
-	r.POST("/api/v6/channels/:cid/messages", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.POST("/channels/:cid/messages", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		defer c.Request.RemoveMultipartFormFiles()
 		me := c.UserValue("m:user").(*User)
 		var req APIReqPostChannelsCidMessages
@@ -250,7 +250,7 @@ func InitRestChannel(r *router.Router) {
 		return
 	}, RL_SENDMSG)))
 
-	r.GET("/api/v6/channels/:cid/messages", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.GET("/channels/:cid/messages", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		cid := c.UserValue("cid").(string)
 
@@ -296,7 +296,7 @@ func InitRestChannel(r *router.Router) {
 		return
 	}, RL_RECVMSG)))
 
-	r.GET("/api/v6/channels/:cid/messages/:mid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.GET("/channels/:cid/messages/:mid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		cid := c.UserValue("cid").(string)
 		mid := c.UserValue("mid").(string)
@@ -337,7 +337,7 @@ func InitRestChannel(r *router.Router) {
 		return
 	}, RL_RECVMSG)))
 
-	r.POST("/api/v6/channels/:cid/messages/:mid/ack", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.POST("/channels/:cid/messages/:mid/ack", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		cid := c.UserValue("cid").(string)
 		mid := c.UserValue("mid").(string)
@@ -384,7 +384,7 @@ func InitRestChannel(r *router.Router) {
 		Flags   int           `json:"flags"` // Ignored
 	}
 
-	r.PATCH("/api/v6/channels/:cid/messages/:mid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.PATCH("/channels/:cid/messages/:mid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		var req APIReqPatchChannelsCidMessagesMid
 		cid := c.UserValue("cid").(string)
@@ -434,7 +434,7 @@ func InitRestChannel(r *router.Router) {
 		return
 	}, RL_SENDMSG)))
 
-	r.DELETE("/api/v6/channels/:cid/messages/:mid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.DELETE("/channels/:cid/messages/:mid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		cid := c.UserValue("cid").(string)
 		mid := c.UserValue("mid").(string)
@@ -470,7 +470,7 @@ func InitRestChannel(r *router.Router) {
 		c.SetStatusCode(204) // No Content
 	}, RL_DELMSG)))
 
-	r.PUT("/api/v6/channels/:cid/pins/:mid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.PUT("/channels/:cid/pins/:mid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		cid := c.UserValue("cid").(string)
 		mid := c.UserValue("mid").(string)
@@ -512,7 +512,7 @@ func InitRestChannel(r *router.Router) {
 		c.SetStatusCode(204)
 	}, RL_SETINFO)))
 
-	r.DELETE("/api/v6/channels/:cid/pins/:mid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.DELETE("/channels/:cid/pins/:mid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		cid := c.UserValue("cid").(string)
 		mid := c.UserValue("mid").(string)
@@ -554,7 +554,7 @@ func InitRestChannel(r *router.Router) {
 		c.SetStatusCode(204)
 	}, RL_SETINFO)))
 
-	r.GET("/api/v6/channels/:cid/pins", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+	r.GET("/channels/:cid/pins", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		cid := c.UserValue("cid").(string)
 
@@ -597,7 +597,7 @@ func InitRestChannel(r *router.Router) {
 		return
 	}, RL_RECVMSG)))
 
-	r.PUT("/api/v6/channels/:cid/messages/:mid/reactions/:emoji/:uid", MwTkA(func(c *fasthttp.RequestCtx) {
+	r.PUT("/channels/:cid/messages/:mid/reactions/:emoji/:uid", MwTkA(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		cid := c.UserValue("cid").(string)
 		mid := c.UserValue("mid").(string)

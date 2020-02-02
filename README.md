@@ -1,3 +1,5 @@
 The Jangle Server Core
 
 (C) 2019-2020 Ronsor Labs. Jangle is a trademark of Ronsor.
+
+This version serves CoreCord gateway level `v6` and REST API level `v6` and `v7`.

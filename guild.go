@@ -96,7 +96,9 @@ func (gm *GuildMember) HasRole(id snowflake.ID) bool {
 }
 
 func (gm *GuildMember) DelRole(id snowflake.ID) {
-	if id == gm.GuildID { return }
+	if id == gm.GuildID {
+		return
+	}
 	for k, v := range gm.Roles {
 		if v != id {
 			continue
@@ -330,8 +332,8 @@ func (g *Guild) SetMember(extra *GuildMember, opts ...interface{} /* checkBans, 
 		ch, err := GetChannelByID(g.SystemChannelID)
 		if err == nil {
 			ch.CreateMessage(&Message{
-				Author: &User{ID: gm.UserID},
-				Type: MSGTYPE_GUILD_MEMBER_JOIN,
+				Author:  &User{ID: gm.UserID},
+				Type:    MSGTYPE_GUILD_MEMBER_JOIN,
 				Content: "#u has joined",
 			})
 		}
@@ -367,7 +369,7 @@ func (g *Guild) Members(limit int, after snowflake.ID) ([]*GuildMember, error) {
 	c := DB.Core.C("guildmembers")
 	resp := c.Find(wholequery).Sort("user")
 	if limit == 0 {
-		limit = 1
+		limit = 100
 	}
 	if limit > 0 {
 		resp = resp.Limit(limit)
@@ -526,7 +528,7 @@ func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID, forCreateEv
 		Owner:                       oUid == g.OwnerID,
 		OwnerID:                     g.OwnerID,
 		Permissions:                 perm, // TODO
-		NSFW: g.NSFW,
+		NSFW:                        g.NSFW,
 		Region:                      g.Region,
 		DefaultMessageNotifications: g.DefaultMessageNotifications,
 		ExplicitContentFilter:       g.ExplicitContentFilter,

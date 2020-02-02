@@ -41,10 +41,10 @@ type Channel struct {
 	Icon    string       `bson:"icon"`
 
 	// Guild only
-	GuildID              snowflake.ID           `bson:"guild_id"`
-	Position             int                    `bson:"position"`
-	Name                 string                 `bson:"name"`
-	ParentID             snowflake.ID           `bson:"parent_id"`
+	GuildID              snowflake.ID                    `bson:"guild_id"`
+	Position             int                             `bson:"position"`
+	Name                 string                          `bson:"name"`
+	ParentID             snowflake.ID                    `bson:"parent_id"`
 	PermissionOverwrites map[string]*PermissionOverwrite `bson:"permission_overwrites"`
 
 	// Guild Text Channel only
@@ -173,7 +173,7 @@ func (c *Channel) Delete() error {
 		}
 		for _, v := range chs {
 			// This is probably a race condition
-			// Channel update (PUT/PATCH /api/v6/channels/:cid) and (DELETE /api/v6/channels/:parentcid)  Channel parent ID set to 0
+			// Channel update (PUT/PATCH /channels/:cid) and (DELETE /channels/:parentcid)  Channel parent ID set to 0
 			// Still, this is probably not going to happen so <shrug>
 			v.ParentID = 0
 			v.Save()
@@ -256,7 +256,9 @@ func (c *Channel) SetPermissionOverwrites(po []*PermissionOverwrite, u *User) er
 		}
 	}
 	c.PermissionOverwrites = map[string]*PermissionOverwrite{}
-	for _, v := range po { c.PermissionOverwrites[v.ID.String()] = v }
+	for _, v := range po {
+		c.PermissionOverwrites[v.ID.String()] = v
+	}
 	return c.Save()
 }
 
@@ -280,7 +282,9 @@ func (c *Channel) GetPermissions(u *User) PermSet {
 		var allow, deny PermSet
 		for _, v := range mem.Roles {
 			ovw, ok := c.PermissionOverwrites[v.String()]
-			if !ok { continue }
+			if !ok {
+				continue
+			}
 			allow |= ovw.Allow
 			deny |= ovw.Deny
 		}

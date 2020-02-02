@@ -13,11 +13,11 @@ import (
 	"github.com/vharitonsky/iniflags"
 )
 
-const VERSION = "0.1.1/v6 \"I can't believe it's not Discord!\" Edition"
+const VERSION = "version=0.1.1 GW-level=v6 API-level=v6,v7(?) \"I can't believe it's not Discord!\" Edition"
 
 var (
-	flgListen  = flag.String("listen", "0.0.0.0:8081", "Listen address for API server")
-	flgMongoDB = flag.String("mongo", "mongodb://127.0.0.1:3600/?maxIdleTimeMS=0", "MongoDB URI")
+	flgListen     = flag.String("listen", "0.0.0.0:8081", "Listen address for API server")
+	flgMongoDB    = flag.String("mongo", "mongodb://127.0.0.1:3600/?maxIdleTimeMS=0", "MongoDB URI")
 	flgMsgMongoDB = flag.String("mongoMessages", "primary:", "MongoDB URI for messages database")
 	flgSmtpServer = flag.String("smtp", "127.0.0.1:25", "SMTP server for sending emails")
 
@@ -27,7 +27,7 @@ var (
 	flgNoPanic    = flag.Bool("nopanic", true, "Catch all panics in API handlers")
 
 	flgEnableFileServer = flag.Bool("enableFileServer", true, "Enable file server (BogusCDN)")
-	flgFileServerPath = flag.String("fileServerPath", "/tmp/janglefileserver", "File server path")
+	flgFileServerPath   = flag.String("fileServerPath", "/tmp/janglefileserver", "File server path")
 
 	flgObjCacheLimit = flag.Int("cachelimit", 4096, "Object cache limit")
 
@@ -48,7 +48,9 @@ func main() {
 
 	util.NoPanic = *flgNoPanic
 	gCache.Limit(*flgObjCacheLimit)
-	if *flgMsgMongoDB == "primary:" { flgMsgMongoDB = flgMongoDB }
+	if *flgMsgMongoDB == "primary:" {
+		flgMsgMongoDB = flgMongoDB
+	}
 
 	log.Printf("info: jangle-jangled/%s loading...", VERSION)
 
@@ -71,7 +73,7 @@ func main() {
 		}
 	}
 
-	r.GET("/api/v6/version.txt", func(c *fasthttp.RequestCtx) { c.WriteString(VERSION) })
+	r.GET("/version.txt", func(c *fasthttp.RequestCtx) { c.WriteString(VERSION) })
 	InitRestUser(r)
 	InitRestChannel(r)
 	InitRestGuild(r)
