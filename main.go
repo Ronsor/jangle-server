@@ -29,6 +29,9 @@ var (
 	flgEnableFileServer = flag.Bool("enableFileServer", true, "Enable file server (BogusCDN)")
 	flgFileServerPath   = flag.String("fileServerPath", "/tmp/janglefileserver", "File server path")
 
+	flgCDNServeBase = flag.String("cdnServeBase", "https://cdn.jangleapp.com/", "CDN base URL")
+	flgCDNUploadBase = flag.String("cdnUploadBase", "", "CDN upload base URL")
+
 	flgObjCacheLimit = flag.Int("cachelimit", 4096, "Object cache limit")
 
 	flgNode = flag.Int64("node", 1, "Node ID")

@@ -33,6 +33,49 @@ func InitRestUser(r *router.Router) {
 		}
 	}, RL_GETINFO)))
 
+	type APIReqPatchUsersUid struct {
+		Username *string `json:"username" validate:"omitempty,min=2,max=32"`
+		Discriminator *string `json:"discriminator" validate:"omitempty,len=4"`
+		Password string `json:"password" validate:"min=1"`
+
+		Email *string `json:"email" validate:"omitempty,email"`
+		NewPassword *string `json:"new_password" validate:"omitempty,min=6"`
+		Avatar *string `json:"avatar" validate:"omitempty,datauri"`
+	}
+
+	r.PATCH("/users/:uid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+
+		var req APIReqPatchUsersUid
+		if err := util.ReadPostJSON(c, &req); err != nil {
+			println(err.Error())
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+
+		if !util.VerifyPass(me.PasswordHash, req.Password) {
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_ACCESS)
+			return
+		}
+
+		if req.Username != nil {
+			me.SetTag(*req.Username, "")
+		}
+
+		if req.Email != nil {
+			me.Email = *req.Email
+		}
+
+		if req.NewPassword != nil {
+			me.PasswordHash = util.CryptPass(*req.NewPassword)
+		}
+
+		err := me.Save()
+		if err != nil { panic(err) }
+
+		util.WriteJSON(c, me.ToAPI(false))
+	}, RL_SETINFO), "uid"))
+
 	r.GET("/users/:uid/settings", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		util.WriteJSON(c, me.Settings)

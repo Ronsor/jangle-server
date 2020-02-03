@@ -31,7 +31,6 @@ func InitGateway(r *router.Router) {
 		if *flgGatewayUrl != "" {
 			gw = *flgGatewayUrl
 		}
-		// TODO handle other cases
 		util.WriteJSON(c, &responseGetGateway{URL: gw})
 	})
 

@@ -257,6 +257,36 @@ func (u *User) Channels() ([]*Channel, error) {
 	return ch, nil
 }
 
+func (u *User) Save() error {
+	c := DB.Core.C("users")
+	return c.UpdateId(u.ID, bson.M{"$set": u})
+}
+
+func (u *User) SetTag(username, discriminator string) error {
+	c := DB.Core.C("users")
+	if discriminator == "" {
+		dint := 1 + rand.Intn(9998)
+		var err error
+		for tries := 0; tries < 100; tries++ {
+			dscm := fmt.Sprintf("%04d", dint)
+			err = c.UpdateId(u.ID, bson.M{"username":username,"discriminator":dscm})
+			if err == nil {
+				u.Discriminator = dscm
+				u.Username = username
+				return nil
+			}
+		}
+		return err
+	} else {
+		err := c.UpdateId(u.ID, bson.M{"username":username,"discriminator":discriminator})
+		if err == nil {
+			u.Username = username
+			u.Discriminator = discriminator
+		}
+		return err
+	}
+}
+
 func (u *User) Guilds() ([]*Guild, error) {
 	return GetGuildsByUserID(u.ID)
 }
