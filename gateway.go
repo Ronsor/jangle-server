@@ -62,11 +62,14 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 	}
 	codec.Send(ws, mkGwPkt(GW_OP_HELLO, &gwPktDataHello{45000 + (rand.Intn(5) * 1000)}))
 	var pkt *gwPacket
+
+	retryHandshake:
 	err := codec.Recv(ws, &pkt)
 	if err != nil {
 		ws.Close()
 		return
 	}
+
 	switch pkt.Op {
 	case GW_OP_IDENTIFY:
 		var d gwPktDataIdentify
@@ -167,7 +170,7 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 		s2, ok := sessCache.Get(d.SessionID)
 		if !ok {
 			codec.Send(ws, mkGwPkt(GW_OP_INVALID_SESSION, false))
-			return
+			goto retryHandshake
 		}
 
 		sess = s2.(*gwSession)

@@ -43,8 +43,7 @@ func GetPresenceForUser(userID snowflake.ID) (*gwPktDataUpdateStatus, error) {
 	c := DB.Core.C("presence")
 	err := c.Find(bson.M{"_id": userID}).One(&dat)
 	if err != nil {
-		return &gwPktDataUpdateStatus{Status: STATUS_OFFLINE}, nil
-		//return nil, err
+		return &gwPktDataUpdateStatus{Status: STATUS_OFFLINE}, err
 	}
 	return dat.Presence, nil
 }

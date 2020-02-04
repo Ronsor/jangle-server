@@ -560,8 +560,8 @@ func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID, forCreateEv
 		for _, v := range mems {
 			mem := v.ToAPI()
 			outmems = append(outmems, mem)
-			psn, err := GetPresenceForUser(v.UserID)
-			if err == nil {
+			psn, _ := GetPresenceForUser(v.UserID)
+			if psn != nil {
 				out.Presences = append(out.Presences, &APITypePresenceUpdate{
 					User:    mem.User,
 					Roles:   mem.Roles,

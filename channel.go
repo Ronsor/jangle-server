@@ -62,7 +62,7 @@ type Channel struct {
 func CreateDMChannel(party1, party2 snowflake.ID) (*Channel, error) {
 	var c2 Channel
 	c := DB.Core.C("channels")
-	e := c.Find(bson.M{"recipients": bson.M{"$all": []snowflake.ID{party1, party2}}, "type": CHTYPE_DM}).One(&c2)
+	e := c.Find(bson.M{"recipient_ids": bson.M{"$all": []snowflake.ID{party1, party2}}, "type": CHTYPE_DM}).One(&c2)
 	if e != nil {
 		c2.ID = flake.Generate()
 		c2.RecipientIDs = []snowflake.ID{party1, party2}

@@ -259,7 +259,8 @@ func (u *User) Channels() ([]*Channel, error) {
 
 func (u *User) Save() error {
 	c := DB.Core.C("users")
-	return c.UpdateId(u.ID, bson.M{"$set": u})
+	_, err := c.UpsertId(u.ID, u)
+	return err
 }
 
 func (u *User) SetTag(username, discriminator string) error {

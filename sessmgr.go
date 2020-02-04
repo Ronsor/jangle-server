@@ -26,6 +26,34 @@ func msDecodeBSON(in, out interface{}) error {
 }
 
 func InitSessionManager() {
+	go RunSessionManager(DB.Core.Session, "users", func(dm bson.M, evt bson.M) error {
+		log.Println(evt)
+		id := fmt.Sprintf("%v", evt["documentKey"].(bson.M)["_id"])
+		snow, err := snowflake.ParseString(id)
+		gCache.Del(snow)
+		if err != nil {
+			return err
+		}
+		switch evt["operationType"].(string) {
+		case "update":
+			
+		case "replace":
+			var pkt User
+			err := msDecodeBSON(dm, &pkt)
+			if err != nil {
+				return err
+			}
+			SessSub.TryPub(gwPacket{
+				Op: GW_OP_DISPATCH,
+				Type: GW_EVT_USER_UPDATE,
+				Data: pkt.ToAPI(false),
+			}, pkt.ID.String())
+			psc, err := GetPresenceForUser(pkt.ID)
+			if err == nil { SetPresenceForUser(pkt.ID, psc) }
+		}
+		return nil
+	})
+
 	go RunSessionManager(DB.Core.Session, "presence", func(dm bson.M, evt bson.M) error {
 		log.Println(evt)
 		id := fmt.Sprintf("%v", evt["documentKey"].(bson.M)["_id"])
