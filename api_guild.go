@@ -443,7 +443,8 @@ func InitRestGuild(r *router.Router) {
 		me := c.UserValue("m:user").(*User)
 
 		var req APIReqPostGuildsGidChannels
-		if util.ReadPostJSON(c, &req) != nil {
+		if err := util.ReadPostJSON(c, &req); err != nil {
+			log.Println(err);
 			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
 			return
 		}

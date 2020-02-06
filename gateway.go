@@ -122,7 +122,7 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 			out := make([]*APITypeDMChannel, 0, len(chs))
 			for _, v := range chs {
 				if v.Type == CHTYPE_DM {
-					out = append(out, v.ToAPI().(*APITypeDMChannel))
+					out = append(out, v.ToAPI(sess.User).(*APITypeDMChannel))
 				}
 			}
 

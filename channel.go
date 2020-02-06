@@ -59,6 +59,7 @@ type Channel struct {
 	Deleted *time.Time `bson:"deleted,omitempty"`
 }
 
+// Racy, but I don't see another way
 func CreateDMChannel(party1, party2 snowflake.ID) (*Channel, error) {
 	var c2 Channel
 	c := DB.Core.C("channels")
@@ -191,7 +192,11 @@ func (c *Channel) Delete() error {
 	return err
 }
 
-func (c *Channel) ToAPI() APITypeAnyChannel {
+func (c *Channel) ToAPI(extra ...interface{}) APITypeAnyChannel {
+	var me *User
+	if len(extra) > 0 {
+		me = extra[0].(*User)
+	}
 	if c.Type == CHTYPE_DM {
 		rcp := []*APITypeUser{}
 		for _, v := range c.RecipientIDs {
@@ -200,6 +205,15 @@ func (c *Channel) ToAPI() APITypeAnyChannel {
 				rcp = append(rcp, &APITypeUser{ID: v, Discriminator: "0000", Username: "Unknown"})
 			} else {
 				rcp = append(rcp, u.ToAPI(true))
+			}
+		}
+		if me != nil {
+			var swpA, swpB *APITypeUser
+			if rcp[0].ID == me.ID {
+				swpA = rcp[0]
+				swpB = rcp[1]
+				rcp[0] = swpB
+				rcp[1] = swpA
 			}
 		}
 		return &APITypeDMChannel{

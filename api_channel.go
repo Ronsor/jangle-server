@@ -37,7 +37,7 @@ func InitRestChannel(r *router.Router) {
 			return
 		}
 
-		util.WriteJSON(c, ch.ToAPI())
+		util.WriteJSON(c, ch.ToAPI(me))
 	}, RL_GETINFO)))
 
 	r.DELETE("/channels/:cid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
@@ -60,7 +60,7 @@ func InitRestChannel(r *router.Router) {
 			return
 		}
 
-		resp := ch.ToAPI()
+		resp := ch.ToAPI(me)
 
 		err = ch.Delete()
 		if err != nil {
