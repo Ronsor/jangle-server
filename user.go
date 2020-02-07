@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"math/rand"
+	"crypto/md5"
+	"path"
 	"time"
 
 	jwt "jangled/sjwt"
@@ -286,6 +289,17 @@ func (u *User) SetTag(username, discriminator string) error {
 		}
 		return err
 	}
+}
+
+func (u *User) SetAvatar(dataURL string) error {
+	c := DB.Core.C("users")
+	imgFp := fmt.Sprintf("%x", md5.Sum([]byte(dataURL)))
+	fullpath, err := ImageDataURLUpload(gFileStore, "/avatars/" + imgFp + ".png", dataURL, ImageUploadOptions{MaxWidth: 1024, MaxHeight: 1024, ForcePNG: true})
+	if err != nil { return err }
+	bp := path.Base(fullpath)
+	u.Avatar = strings.TrimRight(bp, path.Ext(bp))
+	c.UpdateId(u.ID, bson.M{"avatar": bp})
+	return nil
 }
 
 func (u *User) Guilds() ([]*Guild, error) {

@@ -59,7 +59,10 @@ func InitRestUser(r *router.Router) {
 		}
 
 		if req.Username != nil {
-			me.SetTag(*req.Username, "")
+			err := me.SetTag(*req.Username, "")
+			if err != nil {
+				panic(err)
+			}
 		}
 
 		if req.Email != nil {
@@ -68,6 +71,13 @@ func InitRestUser(r *router.Router) {
 
 		if req.NewPassword != nil {
 			me.PasswordHash = util.CryptPass(*req.NewPassword)
+		}
+
+		if req.Avatar != nil {
+			err := me.SetAvatar(*req.Avatar)
+			if err != nil {
+				panic(err)
+			}
 		}
 
 		err := me.Save()

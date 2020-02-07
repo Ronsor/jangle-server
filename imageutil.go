@@ -10,12 +10,20 @@ import (
 	"image/png"
 	"image/jpeg"
 	"image/gif"
+
+	"github.com/vincent-petithory/dataurl"
 )
 
 type ImageUploadOptions struct {
 	ForcePNG, ForceJPEG bool
 	AllowGIF bool
 	MaxWidth, MaxHeight int
+}
+
+func ImageDataURLUpload(f FileStore, upath string, url string, opts ImageUploadOptions) (string, error) {
+	durl, err := dataurl.DecodeString(url)
+	if err != nil { return "", err }
+	return ImageBytesUpload(f, upath, durl.Data, opts)
 }
 
 func ImageBytesUpload(f FileStore, upath string, data []byte, opts ImageUploadOptions) (realPath string, err error) {
@@ -54,5 +62,5 @@ func ImageBytesUpload(f FileStore, upath string, data []byte, opts ImageUploadOp
 			panic("Impossible state")
 	}
 	if err != nil { return "", err }
-	return BytesUpload(f, upath, outBuf.Bytes())
+	return BytesUpload(f, upath + "/" + name, outBuf.Bytes())
 }

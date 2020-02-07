@@ -30,8 +30,9 @@ type BogusCDN struct {}
 
 func (b *BogusCDN) Init(opts ...interface{}) error {
 	os.MkdirAll(*flgFileServerPath, 0755)
-	opts[0].(*router.Router).GET("/boguscdn/", (&fasthttp.FS{
+	opts[0].(*router.Router).GET("/boguscdn/*filepath", (&fasthttp.FS{
 		Root: *flgFileServerPath,
+		GenerateIndexPages: true,
 		PathRewrite: fasthttp.NewPathSlashesStripper(1),
 	}).NewRequestHandler())
 	return nil
@@ -39,8 +40,8 @@ func (b *BogusCDN) Init(opts ...interface{}) error {
 
 
 func (b *BogusCDN) PerformUpload(path string, pipe io.Reader) (string, error) {
-	os.MkdirAll(filepath.Dir(path), 0755)
-	file, err := os.Open(*flgFileServerPath + "/" + path)
+	os.MkdirAll(*flgFileServerPath + "/" + filepath.Dir(path), 0755)
+	file, err := os.Create(*flgFileServerPath + "/" + path)
 	if err != nil { return "", err }
 	_, err = io.Copy(file, pipe)
 	if err != nil { return "", err }
