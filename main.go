@@ -29,7 +29,7 @@ var (
 	flgEnableFileServer = flag.Bool("enableFileServer", true, "Enable file server (BogusCDN)")
 	flgFileServerPath   = flag.String("fileServerPath", "/tmp/janglefileserver", "File server path")
 
-	flgCDNServeBase = flag.String("cdnServeBase", "https://cdn.jangleapp.com/", "CDN base URL")
+	flgCDNServeBase = flag.String("cdnServeBase", "https://cdn.jangleapp.com", "CDN base URL")
 	flgCDNUploadBase = flag.String("cdnUploadBase", "", "CDN upload base URL")
 
 	flgObjCacheLimit = flag.Int("cachelimit", 4096, "Object cache limit")
@@ -86,6 +86,11 @@ func main() {
 	InitSessionManager()
 	InitGateway(r)
 	log.Printf("info: initialized gateway routes")
+
+	if *flgEnableFileServer {
+		gFileStore.Init(r)
+		log.Printf("info: initialized boguscdn")
+	}
 
 	log.Printf("info: starting http server (addr=%s)", *flgListen)
 	log.Fatal(fasthttp.ListenAndServe(*flgListen, MwAccCtl(r.Handler, "*")))
