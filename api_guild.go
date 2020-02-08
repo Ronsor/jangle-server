@@ -31,24 +31,27 @@ func InitRestGuild(r *router.Router) {
 	}, RL_GETINFO)))
 
 	type APIReqPatchGuildsGid struct {
-		Name                        *string       `json:"name" validate:"min=2,max=100"`
+		Name                        *string       `json:"name" validate:"omitempty,min=2,max=100"`
+		Description		    *string       `json:"description" validate:"omitempty,max=256"`
 		Region                      *string       `json:"region,omitempty"` // Ignored
 		Icon                        *string       `json:"icon,omitempty" validate:"omitempty,datauri"`
 		VerificationLevel           *int          `json:"verification_level,omitempty"`
-		DefaultMessageNotifications *int          `json:"default_message_notifications,omitempty" validate:"min=0,max=1"`
-		ExplicitContentFilter       *int          `json:"explicit_content_filter" validate:"min=0,max=0"`
+		DefaultMessageNotifications *int          `json:"default_message_notifications" validate:"omitempty,min=0,max=1"`
+		ExplicitContentFilter       *int          `json:"explicit_content_filter" validate:"omitempty,min=0,max=0"`
 		Public                      *bool         `json:"public"`
 		NSFW                        *bool         `json:"nsfw"`
 		OwnerID                     *snowflake.ID `json:"owner_id"`
 		SystemChannelID             *snowflake.ID `json:"system_channel_id"`
 		Features                    *[]string     `json:"features"`
+		Tags *[]string `json:"tags" validate:"omitempty,max=6"`
 	}
 
 	r.PATCH("/guilds/:gid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 
 		var req APIReqPatchGuildsGid
-		if util.ReadPostJSON(c, &req) != nil {
+		if err := util.ReadPostJSON(c, &req); err != nil {
+			log.Println(err)
 			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
 			return
 		}
@@ -73,6 +76,12 @@ func InitRestGuild(r *router.Router) {
 		}
 		if req.DefaultMessageNotifications != nil {
 			g.DefaultMessageNotifications = *req.DefaultMessageNotifications
+		}
+		if req.Tags != nil {
+			g.Tags = *req.Tags
+		}
+		if req.Description != nil {
+			g.Description = *req.Description
 		}
 		if req.NSFW != nil {
 			g.NSFW = *req.NSFW
@@ -118,8 +127,7 @@ func InitRestGuild(r *router.Router) {
 			panic(err)
 		}
 
-		util.WriteJSON(c, g)
-
+		util.WriteJSON(c, g.ToAPI(me.ID, false))
 	}, RL_SETINFO)))
 
 	r.DELETE("/guilds/:gid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {

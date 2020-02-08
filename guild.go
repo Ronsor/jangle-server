@@ -1,7 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"time"
+	"path"
+	"strings"
+	"crypto/md5"
 
 	"github.com/bwmarrin/snowflake"
 	"github.com/globalsign/mgo/bson"
@@ -186,6 +190,7 @@ type Guild struct {
 	Large bool `bson:"large"`
 
 	Description     string `bson:"description"`
+	Tags []string `bson:"tags"`
 	Banner          string `bson:"banner"`
 	PremiumTier     int    `bson:"premium_tier"`
 	PreferredLocale string `bson:"preferred_locale"`
@@ -427,6 +432,17 @@ func (g *Guild) CreateChannel(ch *Channel) (*Channel, error) {
 		return nil, err
 	}
 	return ch, nil
+}
+
+func (g *Guild) SetIcon(dataURL string) error {
+	c := DB.Core.C("guilds")
+	imgFp := fmt.Sprintf("%x", md5.Sum([]byte(dataURL)))
+	fullpath, err := ImageDataURLUpload(gFileStore, "/icons/" + g.ID.String() + "/" + imgFp + ".png", dataURL, ImageUploadOptions{MaxWidth: 1024, MaxHeight: 1024, ForcePNG: true})
+	if err != nil { return err }
+	bp := path.Base(fullpath)
+	g.Icon = strings.TrimRight(bp, path.Ext(bp))
+	c.UpdateId(g.ID, bson.M{"icon": bp})
+	return nil
 }
 
 func (g *Guild) AddRole(r *Role) error {
