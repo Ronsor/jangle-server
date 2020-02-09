@@ -9,6 +9,11 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+func NoContentJSON(c *fasthttp.RequestCtx) {
+	c.SetStatusCode(204)
+	WriteJSON(c, map[string]interface{}{})
+}
+
 func ReadPostAny(c *fasthttp.RequestCtx, i interface{}, opts ...interface{}) error {
 	frm, err := c.Request.MultipartForm()
 	if err != nil { return ReadPostJSON(c, i, opts...) }

@@ -184,7 +184,7 @@ func InitRestGuild(r *router.Router) {
 		if err != nil {
 			panic(err)
 		}
-		c.SetStatusCode(204)
+		util.NoContentJSON(c)
 	}, RL_DELOBJ)))
 
 	r.GET("/guilds/:gid/members", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
@@ -271,7 +271,7 @@ func InitRestGuild(r *router.Router) {
 		if err != nil {
 			panic(err)
 		}
-		c.SetStatusCode(204)
+		util.NoContentJSON(c)
 	}, RL_DELOBJ)))
 
 	type APIReqPutGuildsGidMembersUid struct {
@@ -291,22 +291,26 @@ func InitRestGuild(r *router.Router) {
 			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_GUILD)
 			return
 		}
-		if !g.HasFeature(GUILD_FEATURE_DISCOVERABLE) {
+		if !g.HasFeature(GUILD_FEATURE_DISCOVERABLE) && me.Flags & USER_FLAG_STAFF == 0 {
 			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
 			return
 		}
+
 		if _, err := g.GetMember(me.ID); err != nil {
-			c.SetStatusCode(204)
+			util.NoContentJSON(c)
 			return
 		}
+
 		err = g.AddMember(me.ID, true)
 		if err != nil {
 			panic(err)
 		}
+
 		mem, err := g.GetMember(me.ID)
 		if err != nil {
 			panic(err)
 		}
+
 		c.SetStatusCode(201)
 		util.WriteJSON(c, mem.ToAPI())
 	}, RL_NEWOBJ), "uid"))
@@ -373,7 +377,7 @@ func InitRestGuild(r *router.Router) {
 			panic(err)
 		}
 
-		c.SetStatusCode(204)
+		util.NoContentJSON(c)
 	}, RL_SETINFO)))
 
 	type APIReqPatchGuildsGidMembersMeNick struct {
@@ -475,7 +479,7 @@ func InitRestGuild(r *router.Router) {
 			ch.Save()
 		}
 
-		c.SetStatusCode(204)
+		util.NoContentJSON(c)
 	}, RL_SETINFO)))
 
 	type APIReqPostGuildsGidChannels struct {

@@ -273,7 +273,7 @@ func (u *User) SetTag(username, discriminator string) error {
 		var err error
 		for tries := 0; tries < 100; tries++ {
 			dscm := fmt.Sprintf("%04d", dint)
-			err = c.UpdateId(u.ID, bson.M{"username":username,"discriminator":dscm})
+			err = c.UpdateId(u.ID, bson.M{"$set":bson.M{"username":username,"discriminator":dscm}})
 			if err == nil {
 				u.Discriminator = dscm
 				u.Username = username
@@ -282,7 +282,7 @@ func (u *User) SetTag(username, discriminator string) error {
 		}
 		return err
 	} else {
-		err := c.UpdateId(u.ID, bson.M{"username":username,"discriminator":discriminator})
+		err := c.UpdateId(u.ID, bson.M{"$set":bson.M{"username":username,"discriminator":discriminator}})
 		if err == nil {
 			u.Username = username
 			u.Discriminator = discriminator
@@ -298,7 +298,7 @@ func (u *User) SetAvatar(dataURL string) error {
 	if err != nil { return err }
 	bp := path.Base(fullpath)
 	u.Avatar = strings.TrimRight(bp, path.Ext(bp))
-	c.UpdateId(u.ID, bson.M{"avatar": bp})
+	c.UpdateId(u.ID, bson.M{"$set":bson.M{"avatar": bp}})
 	return nil
 }
 

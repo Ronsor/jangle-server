@@ -364,7 +364,7 @@ func (g *Guild) HasFeature(feat string) bool {
 	return false
 }
 
-func (g *Guild) SetMember(extra *GuildMember, opts ...interface{} /* checkBans, noUpsert bool */) error {
+func (g *Guild) SetMember(extra *GuildMember, opts ...interface{} /* checkBans, noUpsert, announce bool */) error {
 	c := DB.Core.C("guildmembers")
 	//var om GuildMember
 	//if err := c.Find(bson.M{"user": extra.UserID, "guild_id": g.ID}).One(&om); err == nil {
@@ -377,8 +377,10 @@ func (g *Guild) SetMember(extra *GuildMember, opts ...interface{} /* checkBans, 
 	var err error
 	// TODO: actually check bans if requested
 	if len(opts) > 1 && opts[1].(bool) {
-		c.Remove(bson.M{"user": gm.UserID, "guild_id": g.ID, "deleted": bson.M{"$not": nil}})
-		err = c.Insert(gm)
+		err = c.Remove(bson.M{"user": gm.UserID, "guild_id": g.ID, "deleted": bson.M{"$exists": true}})
+		if err == nil || err == mgo.ErrNotFound {
+			err = c.Insert(gm)
+		}
 	} else {
 		_, err = c.Upsert(bson.M{"user": gm.UserID, "guild_id": g.ID}, gm)
 	}
@@ -388,7 +390,7 @@ func (g *Guild) SetMember(extra *GuildMember, opts ...interface{} /* checkBans, 
 			ch.CreateMessage(&Message{
 				Author:  &User{ID: gm.UserID},
 				Type:    MSGTYPE_GUILD_MEMBER_JOIN,
-				Content: "#u has joined",
+				Content: "@self has joined",
 			})
 		}
 	}
@@ -407,7 +409,8 @@ func (g *Guild) HasMember(userID snowflake.ID) bool {
 func (g *Guild) GetMember(userID snowflake.ID) (*GuildMember, error) {
 	c := DB.Core.C("guildmembers")
 	var m GuildMember
-	err := c.Find(bson.M{"user": userID, "guild_id": g.ID}).One(&m)
+	err := c.Find(bson.M{"user": userID, "guild_id": g.ID, "deleted": bson.M{"$exists": false}}).One(&m)
+	if m.Deleted != nil { panic("We can't do this!") }
 	if err != nil {
 		return nil, err
 	}
@@ -443,7 +446,7 @@ func (g *Guild) CountMembers() int {
 
 func (g *Guild) DelMember(UserID snowflake.ID) error {
 	c := DB.Core.C("guildmembers")
-	err := c.Update(bson.M{"user": UserID, "guild_id": g.ID}, bson.M{"deleted": time.Now()})
+	err := c.Update(bson.M{"user": UserID, "guild_id": g.ID}, bson.M{"$set":bson.M{"deleted": time.Now()}})
 	return err
 }
 
@@ -490,7 +493,7 @@ func (g *Guild) SetIcon(dataURL string) error {
 	if err != nil { return err }
 	bp := path.Base(fullpath)
 	g.Icon = strings.TrimRight(bp, path.Ext(bp))
-	c.UpdateId(g.ID, bson.M{"icon": bp})
+	c.UpdateId(g.ID, bson.M{"$set":bson.M{"icon": bp}})
 	return nil
 }
 

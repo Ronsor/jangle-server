@@ -176,7 +176,7 @@ func InitRestChannel(r *router.Router) {
 			panic(err)
 		}
 
-		c.SetStatusCode(204)
+		util.NoContentJSON(c)
 	}, RL_SENDMSG)))
 
 	type APIReqPostChannelsCidMessages struct {
@@ -467,7 +467,7 @@ func InitRestChannel(r *router.Router) {
 
 		msg.Save()
 
-		c.SetStatusCode(204) // No Content
+		util.NoContentJSON(c) // No Content
 	}, RL_DELMSG)))
 
 	r.PUT("/channels/:cid/pins/:mid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
@@ -509,7 +509,7 @@ func InitRestChannel(r *router.Router) {
 
 		msg.Save()
 
-		c.SetStatusCode(204)
+		util.NoContentJSON(c)
 	}, RL_SETINFO)))
 
 	r.DELETE("/channels/:cid/pins/:mid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
@@ -551,7 +551,7 @@ func InitRestChannel(r *router.Router) {
 
 		msg.Save()
 
-		c.SetStatusCode(204)
+		util.NoContentJSON(c)
 	}, RL_SETINFO)))
 
 	r.GET("/channels/:cid/pins", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
@@ -630,7 +630,7 @@ func InitRestChannel(r *router.Router) {
 
 		_, _, _, _, _ = me, csnow, msnow, msg, emoji
 
-		c.SetStatusCode(204) // No Content
+		util.NoContentJSON(c) // No Content
 	}, "uid"))
 
 }

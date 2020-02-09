@@ -18,7 +18,7 @@ func InitDB() {
 		log.Fatal(err)
 	}
 	// TODO: separate DB server for messages, and files
-	sess.SetSafe(&mgo.Safe{WMode: "majority"})
+	sess.SetSafe(&mgo.Safe{WMode: "majority", J: true})
 	DB.Core = sess.DB("")
 	DB.Files = sess.DB("")
 	dbSess = sess
