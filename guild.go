@@ -377,6 +377,7 @@ func (g *Guild) SetMember(extra *GuildMember, opts ...interface{} /* checkBans, 
 	var err error
 	// TODO: actually check bans if requested
 	if len(opts) > 1 && opts[1].(bool) {
+		c.Remove(bson.M{"user": gm.UserID, "guild_id": g.ID, "deleted": bson.M{"$not": nil}})
 		err = c.Insert(gm)
 	} else {
 		_, err = c.Upsert(bson.M{"user": gm.UserID, "guild_id": g.ID}, gm)
