@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"strconv"
+	"strings"
 
 	"jangled/util"
 
@@ -13,6 +14,36 @@ import (
 
 func InitRestGuild(r *router.Router) {
 	log.Println("Init /guilds Endpoints")
+
+	r.GET("/guilds", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+
+		query := GuildSearchQuery{
+			MustTags: strings.Split(string(c.FormValue("tags")), " "),
+			MustFeatures: strings.Split(string(c.FormValue("features")), " "),
+		}
+
+		if query.MustTags[0] == "" { query.MustTags = nil }
+		if query.MustFeatures[0] == "" { query.MustFeatures = nil }
+
+		query.Before, _ = snowflake.ParseString(string(c.FormValue("before")))
+		query.Limit, _ = strconv.Atoi(string(c.FormValue("limit")))
+
+		if me.Flags & USER_FLAG_STAFF == 0 || string(c.FormValue("overlord")) != "yes" {
+			query.MustFeatures = append(query.MustFeatures, GUILD_FEATURE_DISCOVERABLE)
+		}
+
+		gds, err := GetGuildsBySearchQuery(query)
+
+		if err != nil {
+			panic(err)
+		}
+
+		out := []*APITypeGuild{}
+		for _, v := range gds { out = append(out, v.ToAPI(me.ID, false)) }
+
+		util.WriteJSON(c, out)
+	}, RL_GETINFO)))
 
 	r.GET("/guilds/:gid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
@@ -228,7 +259,14 @@ func InitRestGuild(r *router.Router) {
 			return
 		}
 
-		err = g.DelMember(snow)
+		uid := c.UserValue("uid").(string)
+		usnow, err := snowflake.ParseString(uid)
+		if err != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+
+		err = g.DelMember(usnow)
 
 		if err != nil {
 			panic(err)

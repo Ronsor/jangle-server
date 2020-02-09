@@ -8,6 +8,7 @@ import (
 	"crypto/md5"
 
 	"github.com/bwmarrin/snowflake"
+	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 )
 
@@ -243,6 +244,53 @@ func GetGuildByID(id snowflake.ID) (*Guild, error) {
 	}
 	gCache.Set(id, g2)
 	return &g2, nil
+}
+
+type GuildSearchQuery struct {
+	MustFeatures []string
+	MustTags []string
+	Before snowflake.ID
+	Limit int
+	SortBy string
+}
+
+func GetGuildsBySearchQuery(gsq GuildSearchQuery) ([]*Guild, error) {
+	c := DB.Core.C("guilds")
+	realquery := bson.M{
+		"features": bson.M{"$all": append([]string{}, gsq.MustFeatures...)},
+		"tags": bson.M{"$all": append([]string{}, gsq.MustTags...)},
+	}
+
+	if gsq.Before != 0 {
+		realquery["_id"] = bson.M{"$lt": gsq.Before}
+	}
+
+	if len(gsq.MustTags) == 0 { delete(realquery, "tags") }
+	if len(gsq.MustFeatures) == 0 { delete(realquery, "features") }
+
+	fmt.Println(realquery)
+
+	found := c.Find(realquery)
+
+	if gsq.Limit != 0 {
+		found = found.Limit(gsq.Limit)
+	} else {
+		found = found.Limit(20)
+	}
+
+	if gsq.SortBy != "" {
+		found = found.Sort("-" + gsq.SortBy)
+	} else {
+		found = found.Sort("-_id")
+	}
+
+	var out []*Guild
+
+	err := found.All(&out)
+
+	if err != nil && err != mgo.ErrNotFound { return nil, err }
+
+	return out, nil
 }
 
 func GetGuildsByUserID(UserID snowflake.ID) ([]*Guild, error) {
@@ -553,6 +601,7 @@ func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID, forCreateEv
 		ApplicationID:               g.ApplicationID,
 		SystemChannelID:             g.SystemChannelID,
 		Description:                 g.Description,
+		Tags: g.Tags,
 		Banner:                      g.Banner,
 		PremiumTier:                 g.PremiumTier,
 		PreferredLocale:             g.PreferredLocale,
@@ -560,6 +609,9 @@ func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID, forCreateEv
 		MaxPresences:                4000,
 		VoiceStates:                 []interface{}{},
 	}
+
+	if out.Tags == nil { g.Tags = []string{} }
+
 	if oUid != 0 {
 		if memb, err := g.GetMember(oUid); err == nil {
 			out.JoinedAt = time.Unix(memb.JoinedAt, 0)

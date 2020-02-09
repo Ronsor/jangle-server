@@ -22,7 +22,7 @@ var (
 	APIERR_UNKNOWN_MESSAGE     = &APIResponseError{10008, "Unknown message"}
 	APIERR_UNKNOWN_ROLE        = &APIResponseError{10011, "Unknown guild role"}
 	APIERR_UNKNOWN_USER        = &APIResponseError{10013, "Unknown user"}
-	APIERR_UNAUTHORIZED        = &APIResponseError{40001, "Unauthoized"}
+	APIERR_UNAUTHORIZED        = &APIResponseError{40001, "Unauthorized"}
 	APIERR_MAX_GUILDS          = &APIResponseError{30001, "Maximum number of guilds reached"}
 	APIERR_MAX_FRIENDS         = &APIResponseError{30002, "Maximum number of friends reached"}
 	APIERR_MAX_PINS            = &APIResponseError{30003, "Maximum number of message pins reached"}
@@ -179,6 +179,7 @@ type APITypeGuild struct {
 	ID     snowflake.ID `json:"id,string"`
 	Name   string       `json:"name"`
 	Icon   string       `json:"icon,omitempty"`
+	Banner      string `json:"banner,omitempty"`
 	Splash string       `json:"splash,omitempty"`
 	NSFW   bool         `json:"nsfw,omitempty"`
 
@@ -218,7 +219,7 @@ type APITypeGuild struct {
 	VoiceStates  []interface{}            `json:"voice_states"`
 
 	Description string `json:"description,omitempty"`
-	Banner      string `json:"banner,omitempty"`
+	Tags []string `json:"tags"`
 
 	PremiumTier     int    `json:"premium_tier"`
 	PreferredLocale string `json:"preferred_locale"`
