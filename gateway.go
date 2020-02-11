@@ -183,6 +183,7 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 	wsc := util.MakeWsChan(ws, codec)
 	sess.Wsc = wsc
 	go func() {
+		defer util.TryRecover()
 		for r := range sess.EvtChan {
 			if sess.Wsc.Closed {
 				break

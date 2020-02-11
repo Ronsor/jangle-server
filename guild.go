@@ -419,7 +419,7 @@ func (g *Guild) GetMember(userID snowflake.ID) (*GuildMember, error) {
 
 func (g *Guild) Members(limit int, after snowflake.ID) ([]*GuildMember, error) {
 	var o []*GuildMember
-	wholequery := bson.M{"guild_id": g.ID}
+	wholequery := bson.M{"guild_id": g.ID, "deleted": bson.M{"$exists": false}}
 	if after != 0 {
 		wholequery["user"] = bson.M{"$gt": after}
 	}

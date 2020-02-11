@@ -208,6 +208,7 @@ func InitSessionManager() {
 						"id":          gm.GuildID.String(),
 						"unavailable": true,
 					},
+					PvtData: &Guild{ID: gm.GuildID},
 				}, gm.UserID.String())
 
 				SessSub.TryPub(gwPacket{
@@ -289,6 +290,7 @@ func InitSessionManager() {
 					"id":          snow.String(),
 					"unavailable": true,
 				},
+				PvtData: &Guild{ID: snow},
 			}, snow.String())
 		}
 		return nil
