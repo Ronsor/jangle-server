@@ -36,7 +36,7 @@ func InitSessionManager() {
 		}
 		switch evt["operationType"].(string) {
 		case "update":
-			
+			// TODO
 		case "replace":
 			var pkt User
 			err := msDecodeBSON(dm, &pkt)
@@ -197,7 +197,7 @@ func InitSessionManager() {
 				return err
 			}
 			if gm.Deleted != nil {
-				usr, err := GetUserByID(gm.ID)
+				usr, err := GetUserByID(gm.User)
 				if err != nil {
 					return err
 				}
