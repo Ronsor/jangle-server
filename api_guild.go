@@ -296,7 +296,7 @@ func InitRestGuild(r *router.Router) {
 			return
 		}
 
-		if _, err := g.GetMember(me.ID); err != nil {
+		if _, err := g.GetMember(me.ID); err == nil {
 			util.NoContentJSON(c)
 			return
 		}

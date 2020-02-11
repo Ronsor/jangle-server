@@ -409,8 +409,8 @@ func (g *Guild) HasMember(userID snowflake.ID) bool {
 func (g *Guild) GetMember(userID snowflake.ID) (*GuildMember, error) {
 	c := DB.Core.C("guildmembers")
 	var m GuildMember
-	err := c.Find(bson.M{"user": userID, "guild_id": g.ID, "deleted": bson.M{"$exists": false}}).One(&m)
-	if m.Deleted != nil { panic("We can't do this!") }
+	err := c.Find(bson.M{"user": userID, "guild_id": g.ID}).One(&m)
+	if m.Deleted != nil { return nil, mgo.ErrNotFound }
 	if err != nil {
 		return nil, err
 	}

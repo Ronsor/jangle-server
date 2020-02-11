@@ -11,7 +11,7 @@ import (
 
 func NoContentJSON(c *fasthttp.RequestCtx) {
 	c.SetStatusCode(204)
-	WriteJSON(c, map[string]interface{}{})
+	c.WriteString("{}")
 }
 
 func ReadPostAny(c *fasthttp.RequestCtx, i interface{}, opts ...interface{}) error {

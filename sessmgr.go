@@ -197,7 +197,7 @@ func InitSessionManager() {
 				return err
 			}
 			if gm.Deleted != nil {
-				usr, err := GetUserByID(gm.User)
+				usr, err := GetUserByID(gm.UserID)
 				if err != nil {
 					return err
 				}
