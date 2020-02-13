@@ -260,6 +260,7 @@ func InitSessionManager() {
 			}
 
 			uf := evt["updateDescription"].(bson.M)["updatedFields"].(bson.M)
+			isNonRole := false
 			for k, v := range uf {
 				if strings.HasPrefix(k, "roles.") {
 					var role Role
@@ -280,8 +281,17 @@ func InitSessionManager() {
 						},
 						PvtData: &role,
 					}, g.ID.String())
+				} else {
+					isNonRole = true
 				}
 			}
+			if !isNonRole { return nil }
+			SessSub.TryPub(gwPacket{
+				Op: GW_OP_DISPATCH,
+				Type: GW_EVT_GUILD_UPDATE,
+				Data: g.ToAPI(0, false),
+				PvtData: g,
+			}, g.ID.String())
 		case "delete":
 			SessSub.TryPub(gwPacket{
 				Op:   GW_OP_DISPATCH,

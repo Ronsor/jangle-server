@@ -445,6 +445,7 @@ func (g *Guild) CountMembers() int {
 }
 
 func (g *Guild) DelMember(UserID snowflake.ID) error {
+	if UserID == g.OwnerID { return mgo.ErrNotFound }
 	c := DB.Core.C("guildmembers")
 	err := c.Update(bson.M{"user": UserID, "guild_id": g.ID}, bson.M{"$set":bson.M{"deleted": time.Now()}})
 	return err
