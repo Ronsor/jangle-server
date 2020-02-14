@@ -225,5 +225,11 @@ type APITypeGuild struct {
 	PreferredLocale string `json:"preferred_locale"`
 }
 
+// "Safe" Ban type
+type APITypeGuildBan struct {
+	Reason string `json:"reason"`
+	User *APITypeUser `json:"user"`
+}
+
 // "Safe" Presence Update type
 type APITypePresenceUpdate gwEvtDataPresenceUpdate

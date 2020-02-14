@@ -19,5 +19,7 @@ require (
 	github.com/vharitonsky/iniflags v0.0.0-20180513140207-a33cd0b5f3de
 	github.com/vincent-petithory/dataurl v0.0.0-20191104211930-d1553a71de50
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
+	golang.org/x/tools v0.0.0-20200214144324-88be01311a71 // indirect
+	google.golang.org/appengine v1.6.5 // indirect
 	gopkg.in/go-playground/validator.v9 v9.31.0
 )

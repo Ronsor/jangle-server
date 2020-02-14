@@ -164,7 +164,16 @@ type GuildBan struct {
 	ID snowflake.ID `bson:"_id"`
 	GuildID snowflake.ID `bson:"guild_id"`
 	UserID snowflake.ID `bson:"user_id"`
+	Reason string `bson:"reason"`
 	Expires *time.Time `bson:"expires,omitempty"`
+}
+
+func (gb *GuildBan) ToAPI() *APITypeGuildBan {
+	usr, err := GetUserByID(gb.UserID)
+	if err != nil {
+		usr = &User{ID: gb.ID, Username: "Unknown", Discriminator: "0000"}
+	}
+	return &APITypeGuildBan{gb.Reason, usr.ToAPI(true)}
 }
 
 type Guild struct {
@@ -530,6 +539,21 @@ func (g *Guild) Ban(userID snowflake.ID, length time.Duration, nukeMsgWithinPast
 		if err != nil { return err }
 	}
 	return nil
+}
+
+func (g *Guild) Unban(userID snowflake.ID) error {
+	c := DB.Core.C("guildbans")
+	return c.Remove(bson.M{"guild_id": g.ID, "user_id": userID})
+}
+
+func (g *Guild) Bans() ([]*GuildBan, error) {
+	var b []*GuildBan
+	c := DB.Core.C("guildbans")
+	err := c.Find(bson.M{"guild_id": g.ID}).All(&b)
+	if err != nil && err != mgo.ErrNotFound {
+		return nil, err
+	}
+	return b, nil
 }
 
 func (g *Guild) GetBan(userID snowflake.ID) (*GuildBan, error) {
