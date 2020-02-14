@@ -34,6 +34,8 @@ var (
 	APIERR_EMPTY_MESSAGE       = &APIResponseError{50006, "Message is empty"}
 	APIERR_CANT_EDIT_MESSAGE   = &APIResponseError{50005, "Can't edit message"}
 	APIERR_MISSING_PERMISSIONS = &APIResponseError{50013, "Missing required permissions"}
+	APIERR_YOUREBANNEDCREEP = &APIResponseError{40007, "You're banned, creep!"}
+	APIERR_USER_BANNED = APIERR_YOUREBANNEDCREEP
 	// TODO fill in the rest of the magic numbers
 )
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 	"strconv"
 	"strings"
 
@@ -438,6 +439,153 @@ func InitRestGuild(r *router.Router) {
 		}
 		util.WriteJSON(c, g.ToAPI(me.ID).Channels)
 	}, RL_GETINFO)))
+
+	r.GET("/guilds/:gid/bans", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		gid := c.UserValue("gid").(string)
+		snow, err := snowflake.ParseString(gid)
+		if err != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+		g, err := GetGuildByID(snow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_GUILD)
+			return
+		}
+		if !g.GetPermissions(me).Has(PERM_BAN_MEMBERS) {
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
+			return
+		}
+
+		bans, err := g.Bans()
+		if err != nil { panic(err) }
+
+		out := []*APITypeGuildBan{}
+		for _, v := range bans { out = append(out, v.ToAPI()) }
+
+		util.WriteJSON(c, out)
+	}, RL_GETINFO)))
+
+	r.GET("/guilds/:gid/bans/:uid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		gid := c.UserValue("gid").(string)
+		uid := c.UserValue("uid").(string)
+
+		snow, err := snowflake.ParseString(gid)
+		if err != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+		usnow, err := snowflake.ParseString(uid)
+		if err != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+
+		g, err := GetGuildByID(snow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_GUILD)
+			return
+		}
+		if !g.GetPermissions(me).Has(PERM_BAN_MEMBERS) && usnow != me.ID {
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
+			return
+		}
+
+		ban, err := g.GetBan(usnow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_USER)
+			return
+		}
+
+		util.WriteJSON(c, ban.ToAPI())
+	}, RL_GETINFO)))
+
+	type APIReqPutGuildsGidBansUid struct {
+		DeleteMessageDays int	`json:"delete-message-days" validate:"omitempty,min=0,max=7"`
+		DeleteMessageSeconds int `json:"delete-message-seconds" validate:"omitempty,min=0,max=86400"`
+		Reason string `json:"reason" validate:"omitempty,min=0,max=128"`
+	}
+
+	r.PUT("/guilds/:gid/bans/:uid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		gid := c.UserValue("gid").(string)
+		uid := c.UserValue("uid").(string)
+
+		var req APIReqPutGuildsGidBansUid
+		if err := util.ReadPostJSON(c, &req); err != nil {
+			log.Println(err)
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+
+		snow, err := snowflake.ParseString(gid)
+		if err != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+		usnow, err := snowflake.ParseString(uid)
+		if err != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+
+		g, err := GetGuildByID(snow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_GUILD)
+			return
+		}
+		if !g.GetPermissions(me).Has(PERM_BAN_MEMBERS) {
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
+			return
+		}
+
+		if _, err := GetUserByID(usnow); err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_USER)
+			return
+		}
+
+		err = g.Ban(usnow, 0, time.Duration(req.DeleteMessageDays * 86400 + req.DeleteMessageSeconds))
+		if err != nil { panic(err) }
+
+		util.NoContentJSON(c)
+	}, RL_SETINFO)))
+
+	r.DELETE("/guilds/:gid/bans/:uid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		gid := c.UserValue("gid").(string)
+		uid := c.UserValue("uid").(string)
+
+		snow, err := snowflake.ParseString(gid)
+		if err != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+		usnow, err := snowflake.ParseString(uid)
+		if err != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+
+		g, err := GetGuildByID(snow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_GUILD)
+			return
+		}
+		if !g.GetPermissions(me).Has(PERM_BAN_MEMBERS) && usnow != me.ID {
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
+			return
+		}
+
+		err = g.Unban(usnow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_USER)
+			return
+		}
+
+		util.NoContentJSON(c)
+	}, RL_SETINFO)))
 
 	type APIReqPatchGuildsGidChannels []struct {
 		ID       snowflake.ID `json:"id,string"`
