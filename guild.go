@@ -403,6 +403,7 @@ func (g *Guild) SetMember(extra *GuildMember, opts ...interface{} /* checkBans, 
 				Author:  &User{ID: gm.UserID},
 				Type:    MSGTYPE_GUILD_MEMBER_JOIN,
 				Content: "@self has joined",
+				Timestamp: time.Now().Unix(),
 			})
 		}
 	}
