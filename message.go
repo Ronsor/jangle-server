@@ -2,9 +2,18 @@ package main
 
 import (
 	"time"
+	"regexp"
+	"strings"
 
 	"github.com/bwmarrin/snowflake"
 	"github.com/globalsign/mgo/bson"
+)
+
+var (
+	MSGFMT_USER = regexp.MustCompile(`<@([0-9]+)>`)
+	MSGFMT_USER_NICK = regexp.MustCompile(`<@!([0-9]+)>`)
+	MSGFMT_CHANNEL = regexp.MustCompile(`<@#([0-9]+)>`)
+	MSGFMT_ROLE = regexp.MustCompile(`<@&([0-9]+)>`)
 )
 
 const (
@@ -13,6 +22,16 @@ const (
 	// TODO: the rest
 	MSGTYPE_PATCH_REACT = 0x42424201 // wrong on so many levels
 )
+
+func reExtSnowflakes(r *regexp.Regexp, text string) []snowflake.ID {
+	out := []snowflake.ID{}
+	s := r.FindAllStringSubmatch(text, -1)
+	for _, v := range s {
+		snow, _ := snowflake.ParseString(v[1])
+		out = append(out, snow)
+	}
+	return out
+}
 
 type MessageEmbed struct {
 	// There will be something here
@@ -74,9 +93,9 @@ type Message struct {
 	TTS bool `bson:"tts"`
 
 	MentionEveryone bool           `bson:"mention_everyone"`
-	Mentions        []*User        `bson:"mentions"`
+	Mentions        []snowflake.ID       `bson:"mentions"`
 	MentionRoles    []snowflake.ID `bson:"mention_roles"`
-	MentionChannels []interface{}  `bson:"mention_channels"`
+	MentionChannels []snowflake.ID `bson:"mention_channels"`
 
 	Attachments []interface{}   `bson:"attachments"`
 	Embeds      []*MessageEmbed `bson:"embeds"`
@@ -116,6 +135,20 @@ func (m *Message) Save() error {
 	return c.UpdateId(m.ID, bson.M{"$set": m})
 }
 
+func (m *Message) ParseContent(usr *User, ch *Channel) error {
+	if m.MentionEveryone && ch.IsGuild() {
+		g, err := ch.Guild()
+		if err != nil { return err }
+		if g.GetPermissions(usr).Has(PERM_MENTION_EVERYONE) && strings.Contains(m.Content, "@everyone") {
+			m.MentionEveryone = true
+		}
+	}
+	m.MentionRoles = reExtSnowflakes(MSGFMT_ROLE, m.Content)
+	m.Mentions = append(reExtSnowflakes(MSGFMT_USER, m.Content), reExtSnowflakes(MSGFMT_USER_NICK, m.Content)...)
+	m.MentionChannels = reExtSnowflakes(MSGFMT_CHANNEL, m.Content)
+	return nil
+}
+
 func (m *Message) ToAPI() (ret *APITypeMessage) {
 	ret = &APITypeMessage{
 		ID:              m.ID,
@@ -126,7 +159,6 @@ func (m *Message) ToAPI() (ret *APITypeMessage) {
 		TTS:             m.TTS,
 		MentionEveryone: m.MentionEveryone,
 		MentionRoles:    m.MentionRoles,
-		MentionChannels: m.MentionChannels,
 		Attachments:     m.Attachments,
 		Embeds:          m.Embeds,
 		Nonce:           m.Nonce,
@@ -148,10 +180,30 @@ func (m *Message) ToAPI() (ret *APITypeMessage) {
 	}
 	ret.Attachments = []interface{}{}
 	ret.Mentions = []*APITypeUser{}
-	ret.Reactions = []*APITypeMessageReaction{}
-	for _, v := range m.Mentions {
-		ret.Mentions = append(ret.Mentions, v.ToAPI(true))
+	if m.GuildID != 0 {
+		g, err := GetGuildByID(m.GuildID)
+		if err == nil {
+			for _, v := range m.Mentions {
+				mem, err := g.GetMember(v)
+				if err == nil {
+					memapi := mem.ToAPI()
+					usrapi := memapi.User
+					usrapi.Member = memapi
+					memapi.User = nil
+					ret.Mentions = append(ret.Mentions, usrapi)
+				}
+			}
+		}
 	}
+	ret.MentionChannels = []*APITypeChannelMention{}
+	for _, v := range m.MentionChannels {
+		ch, err := GetChannelByID(v)
+		if err == nil {
+			ret.MentionChannels = append(ret.MentionChannels, &APITypeChannelMention{ch.ID, ch.GuildID, ch.Type, ch.Name})
+		}
+	}
+
+	ret.Reactions = []*APITypeMessageReaction{}
 
 	if m.EditedTimestamp != 0 {
 		ts := time.Unix(m.EditedTimestamp, 0)

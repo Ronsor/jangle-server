@@ -230,6 +230,8 @@ func InitRestChannel(r *router.Router) {
 			Embeds:    []*MessageEmbed{},
 		}
 
+		m.ParseContent(me, ch)
+
 		if req.Embed != nil {
 			m.Embeds = append(m.Embeds, req.Embed)
 		}
@@ -399,6 +401,11 @@ func InitRestChannel(r *router.Router) {
 			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
 			return
 		}
+		ch, err := GetChannelByID(csnow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
+			return
+		}
 
 		msnow, err := snowflake.ParseString(mid)
 		if err != nil {
@@ -419,6 +426,7 @@ func InitRestChannel(r *router.Router) {
 
 		if req.Content != nil {
 			msg.Content = *req.Content
+			msg.ParseContent(me, ch)
 		}
 
 		if req.Embed != nil {

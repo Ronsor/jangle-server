@@ -440,6 +440,16 @@ func InitRestGuild(r *router.Router) {
 		util.WriteJSON(c, g.ToAPI(me.ID).Channels)
 	}, RL_GETINFO)))
 
+	type APIReqPostGuildsGidRoles struct {
+		Name *string `json:"name" validate:"omitempty,min=1,max=128"`
+		Permissions *PermSet `json:"permissions" validate:"omitempty"`
+		Color *int `json:"color" validate:"omitempty"`
+		Hoist *bool `json:"hoist" validate:"omitempty"`
+		Mentionable *bool `json:"mentionable" validate:"omitempty"`
+	}
+
+	// TODO:
+
 	r.GET("/guilds/:gid/bans", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		gid := c.UserValue("gid").(string)

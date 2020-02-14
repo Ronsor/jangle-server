@@ -64,6 +64,9 @@ type APITypeUser struct {
 	Premium bool    `json:"premium"`
 	Mobile  bool    `json:"mobile"`
 	Phone   *string `json:"phone,omitempty"`
+
+	// Only used in certain cases
+	Member interface{} `json:"member,omitempty"`
 }
 
 // "Safe" Channel type that represents any channel
@@ -107,6 +110,14 @@ type APITypeMessageReaction struct {
 	user  *User
 }
 
+// "Safe" Channel Mention type
+type APITypeChannelMention struct {
+	ID snowflake.ID `json:"id"`
+	GuildID snowflake.ID `json:"guild_id"`
+	Type int `json:"type"`
+	Name string `json:"name"`
+}
+
 // "Safe" Message type
 // Good grief Discord that's a lot of fields
 type APITypeMessage struct {
@@ -126,7 +137,7 @@ type APITypeMessage struct {
 	MentionEveryone bool           `json:"mention_everyone"`
 	Mentions        []*APITypeUser `json:"mentions"`
 	MentionRoles    []snowflake.ID `json:"mention_roles"`
-	MentionChannels []interface{}  `json:"mention_channels"`
+	MentionChannels []*APITypeChannelMention  `json:"mention_channels"`
 
 	Attachments []interface{}             `json:"attachments"`
 	Embeds      []*MessageEmbed           `json:"embeds"`

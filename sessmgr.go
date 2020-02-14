@@ -53,7 +53,6 @@ func InitSessionManager() {
 		}
 		return nil
 	})
-
 	go RunSessionManager(DB.Core.Session, "presence", func(dm bson.M, evt bson.M) error {
 		log.Println(evt)
 		id := fmt.Sprintf("%v", evt["documentKey"].(bson.M)["_id"])
