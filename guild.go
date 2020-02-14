@@ -160,6 +160,13 @@ func (r *Role) ToAPI() *APITypeRole {
 	return &x
 }
 
+type GuildBan struct {
+	ID snowflake.ID `bson:"_id"`
+	GuildID snowflake.ID `bson:"guild_id"`
+	UserID snowflake.ID `bson:"user_id"`
+	Expires *time.Time `bson:"expires,omitempty"`
+}
+
 type Guild struct {
 	ID     snowflake.ID `bson:"_id"`
 	Name   string       `bson:"name"`
@@ -320,6 +327,11 @@ func (g *Guild) Delete() error {
 		if err != nil {
 			return err
 		}
+	}
+	gbans := DB.Core.C("guildbans")
+	_, err = gbans.RemoveAll(bson.M{"guild_id": g.ID})
+	if err != nil {
+		return err
 	}
 	gmc := DB.Core.C("guildmembers")
 	_, err = gmc.RemoveAll(bson.M{"guild_id": g.ID})
@@ -496,6 +508,40 @@ func (g *Guild) SetIcon(dataURL string) error {
 	g.Icon = strings.TrimRight(bp, path.Ext(bp))
 	c.UpdateId(g.ID, bson.M{"$set":bson.M{"icon": bp}})
 	return nil
+}
+
+func (g *Guild) Ban(userID snowflake.ID, length time.Duration, nukeMsgWithinPast time.Duration) error {
+	err := g.DelMember(userID)
+	if err != mgo.ErrNotFound { return err }
+	gbans := DB.Core.C("guildbans")
+	ban := &GuildBan{
+		ID: flake.Generate(),
+		GuildID: g.ID,
+		UserID: userID,
+	}
+	// TODO: observe length
+	_, err = gbans.Upsert(bson.M{"guild_id": g.ID, "user_id": userID}, ban)
+	if err != nil { return err }
+	if nukeMsgWithinPast > 0 {
+		msgs := DB.Msg.C("msgs")
+		after := time.Now().Add(-nukeMsgWithinPast)
+		_, err := msgs.RemoveAll(bson.M{"guild_id": g.ID, "user_id": userID, "timestamp": bson.M{"$gt": after.Unix()}})
+		if err != nil { return err }
+	}
+	return nil
+}
+
+func (g *Guild) GetBan(userID snowflake.ID) (*GuildBan, error) {
+	var b GuildBan
+	gbans := DB.Core.C("guildbans")
+	err := gbans.Find(bson.M{"guild_id": g.ID, "user_id": userID}).One(&b)
+	if err != nil { return nil, err }
+	return &b, nil
+}
+
+func (g *Guild) IsBanned(userID snowflake.ID) bool {
+	_, err := g.GetBan(userID)
+	return err == nil
 }
 
 func (g *Guild) AddRole(r *Role) error {

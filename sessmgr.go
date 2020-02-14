@@ -289,7 +289,7 @@ func InitSessionManager() {
 			SessSub.TryPub(gwPacket{
 				Op: GW_OP_DISPATCH,
 				Type: GW_EVT_GUILD_UPDATE,
-				Data: g.ToAPI(0, false),
+				Data: g.ToAPI(snowflake.ID(0), false),
 				PvtData: g,
 			}, g.ID.String())
 		case "delete":
