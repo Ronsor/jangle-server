@@ -137,10 +137,10 @@ type gwPktDataIdentify struct {
 
 // OP_UPDATE_STATUS packet data
 type gwPktDataUpdateStatus struct {
-	Since  time.Duration `json:"since"`
-	Game   interface{}   `json:"game"`
-	Status string        `json:"status"`
-	AFK    bool          `json:"afk"`
+	Since  time.Duration `json:"since" bson:"since"`
+	Game   interface{}   `json:"game" bson:"game"`
+	Status string        `json:"status" bson:"status"`
+	AFK    bool          `json:"afk" bson:"afk"`
 }
 
 // OP_RESUME packet data

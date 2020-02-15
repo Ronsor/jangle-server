@@ -64,7 +64,7 @@ func InitSessionManager() {
 		switch evt["operationType"].(string) {
 		case "insert":
 			var pkt gwPktDataUpdateStatus
-			err := msDecodeBSON(dm, &pkt)
+			err := msDecodeBSON(dm["presence"], &pkt)
 			if err != nil {
 				return err
 			}
@@ -114,7 +114,7 @@ func InitSessionManager() {
 			}
 		case "replace":
 			var pkt gwPktDataUpdateStatus
-			err := msDecodeBSON(dm, &pkt)
+			err := msDecodeBSON(dm["presence"], &pkt)
 			if err != nil {
 				return err
 			}
@@ -136,6 +136,29 @@ func InitSessionManager() {
 						Roles:   v.Roles,
 						GuildID: v.GuildID,
 						Status:  pkt.Status,
+						Nick:    v.Nick,
+					},
+				}, v.GuildID.String())
+			}
+		case "delete":
+			gms, err := GetGuildMembersByUserID(snow)
+			if err != nil {
+				return err
+			}
+			usr, err := GetUserByID(snow)
+			if err != nil {
+				return err
+			}
+			usrapi := usr.ToAPI(true) // just cache it
+			for _, v := range gms {
+				SessSub.TryPub(gwPacket{
+					Op:   GW_OP_DISPATCH,
+					Type: GW_EVT_PRESENCE_UPDATE,
+					Data: &gwEvtDataPresenceUpdate{
+						User:    usrapi,
+						Roles:   v.Roles,
+						GuildID: v.GuildID,
+						Status:  "offline",
 						Nick:    v.Nick,
 					},
 				}, v.GuildID.String())

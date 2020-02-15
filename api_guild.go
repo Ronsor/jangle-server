@@ -448,7 +448,54 @@ func InitRestGuild(r *router.Router) {
 		Mentionable *bool `json:"mentionable" validate:"omitempty"`
 	}
 
-	// TODO:
+	r.POST("/guilds/:gid/roles", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		gid := c.UserValue("gid").(string)
+
+		var req APIReqPostGuildsGidRoles
+
+		if err := util.ReadPostJSON(c, &req); err != nil {
+			log.Println(err)
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+
+		snow, err := snowflake.ParseString(gid)
+		if err != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+		g, err := GetGuildByID(snow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_GUILD)
+			return
+		}
+		if !g.GetPermissions(me).Has(PERM_MANAGE_ROLES) {
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
+			return
+		}
+
+		role := &Role{Name: "new role", Permissions: GUILD_EVERYONE_DEFAULT_PERMS}
+
+		if req.Name != nil { role.Name = *req.Name }
+		if req.Permissions != nil {
+			if !g.GetPermissions(me).Has(*req.Permissions) {
+				util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
+				return
+			}
+			role.Permissions = *req.Permissions
+		}
+		if req.Hoist != nil { role.Hoist = *req.Hoist }
+		if req.Mentionable != nil { role.Mentionable = *req.Mentionable }
+
+		role, err = g.AddRole(role)
+
+		if err != nil {
+			panic(err)
+		}
+
+		util.WriteJSON(c, role.ToAPI())
+	}, RL_SETINFO)))
 
 	r.GET("/guilds/:gid/bans", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)

@@ -569,20 +569,21 @@ func (g *Guild) IsBanned(userID snowflake.ID) bool {
 	return err == nil
 }
 
-func (g *Guild) AddRole(r *Role) error {
+func (g *Guild) AddRole(r *Role) (*Role, error) {
 	if r.ID == 0 {
 		r.ID = flake.Generate()
+		r.Position = 1
 		r.FirstTime = true // a stupid hack, but who cares. I have to be done with this.
 	} else {
 		r.FirstTime = false
 	}
 	c := DB.Core.C("guilds")
-	err := c.UpdateId(g.ID, bson.M{"$set": bson.M{"roles." + r.ID.String(): r}})
+	/*err := c.UpdateId(g.ID, bson.M{"$set": bson.M{"roles." + r.ID.String(): r}})
 	if err != nil {
-		return err
-	}
+		return nil, err
+	}*/
 	g.Roles[r.ID.String()] = r
-	return nil
+	return r, nil
 }
 
 func (g *Guild) GetRole(id snowflake.ID) (*Role, error) {
