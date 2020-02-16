@@ -123,7 +123,8 @@ func (gm *GuildMember) ToAPI() *APITypeGuildMember {
 }
 
 type Role struct {
-	ID          snowflake.ID `bson:"id"`
+	ID          snowflake.ID `bson:"_id"`
+	GuildID snowflake.ID `bson:"guild_id"`
 	Name        string       `bson:"name"`
 	Color       int          `bson:"color"`
 	Hoist       bool         `bson:"hoist"`
@@ -193,7 +194,7 @@ type Guild struct {
 	DefaultMessageNotifications int `bson:"default_message_notifications"`
 	ExplicitContentFilter       int `bson:"explicit_content_filter"`
 
-	Roles  map[string]*Role `bson:"roles"`
+	//Roles  map[string]*Role `bson:"roles"` // We don't use this now as it is too inconvenient
 	Emojis []*Emoji         `bson:"emojis"`
 	//Members       map[string]*GuildMember `bson:"members"` // We don't use this now as it is too inefficient
 	Features      []string     `bson:"features"`
@@ -218,13 +219,6 @@ type Guild struct {
 func CreateGuild(u *User, g *Guild) (*Guild, error) {
 	g.ID = flake.Generate()
 	g.OwnerID = u.ID
-	g.Roles = map[string]*Role{
-		g.ID.String(): &Role{
-			ID:          g.ID,
-			Name:        "@everyone",
-			Permissions: GUILD_EVERYONE_DEFAULT_PERMS,
-		},
-	}
 	c := DB.Core.C("guilds")
 	err := c.Insert(g)
 	if err != nil {
@@ -235,6 +229,10 @@ func CreateGuild(u *User, g *Guild) (*Guild, error) {
 		Name: "general",
 		Type: CHTYPE_GUILD_TEXT,
 	})
+	if err != nil {
+		return nil, err
+	}
+	_, err = g.AddRole(&Role{ID: g.ID, GuildID: g.ID, Name: "@everyone", Permissions: GUILD_EVERYONE_DEFAULT_PERMS})
 	if err != nil {
 		return nil, err
 	}
@@ -485,8 +483,10 @@ func (g *Guild) GetPermissions(u *User) PermSet {
 	for _, v := range mem.Roles {
 		uRoles[v] = true
 	}
+	roles, err := g.Roles()
+	if err != nil { return 0 }
 	var perm PermSet
-	for _, v := range g.Roles {
+	for _, v := range roles {
 		if uRoles[v.ID] || v.ID == g.ID { // (v.ID == g.ID) is @everyone. This is a special case.
 			perm |= v.Permissions
 		}
@@ -570,28 +570,37 @@ func (g *Guild) IsBanned(userID snowflake.ID) bool {
 }
 
 func (g *Guild) AddRole(r *Role) (*Role, error) {
+	r.GuildID = g.ID
 	if r.ID == 0 {
 		r.ID = flake.Generate()
-		r.Position = 1
-		r.FirstTime = true // a stupid hack, but who cares. I have to be done with this.
+		r.FirstTime = true
 	} else {
 		r.FirstTime = false
 	}
-	c := DB.Core.C("guilds")
-	/*err := c.UpdateId(g.ID, bson.M{"$set": bson.M{"roles." + r.ID.String(): r}})
-	if err != nil {
-		return nil, err
-	}*/
-	g.Roles[r.ID.String()] = r
+	c := DB.Core.C("roles")
+	_, err := c.UpsertId(r.ID, r)
+	if err != nil { return nil, err }
+	if r.FirstTime {
+		err = c.Update(bson.M{"guild_id": g.ID, "position": bson.M{"$ne": 0}}, bson.M{"$inc": bson.M{"position": 1}})
+		if err != nil { return nil, err }
+	}
+	return r, nil
+}
+
+func (g *Guild) Roles() ([]*Role, error) {
+	var r []*Role
+	c := DB.Core.C("roles")
+	err := c.Find(bson.M{"guild_id": g.ID}).All(&r)
+	if err != nil { return nil, err }
 	return r, nil
 }
 
 func (g *Guild) GetRole(id snowflake.ID) (*Role, error) {
-	r, ok := g.Roles[id.String()]
-	if !ok {
-		return nil, APIERR_UNKNOWN_ROLE
-	}
-	return r, nil
+	var r Role
+	c := DB.Core.C("roles")
+	err := c.Find(bson.M{"guild_id": g.ID, "_id": id}).One(&r)
+	if err != nil { return nil, err }
+	return &r, nil
 }
 
 func (g *Guild) CanSetRoles(has []snowflake.ID, set []snowflake.ID) bool {
@@ -625,11 +634,10 @@ func (g *Guild) DelRole(id snowflake.ID) error {
 		return err
 	}
 	c := DB.Core.C("guilds")
-	err = c.UpdateId(g.ID, bson.M{"$unset": bson.M{"roles." + id.String(): ""}})
+	err = c.Remove(bson.M{"guild_id": g.ID, "_id": id})
 	if err != nil {
 		return err
 	}
-	delete(g.Roles, id.String())
 	return nil
 }
 
@@ -736,7 +744,8 @@ func (g *Guild) ToAPI(options ...interface{} /* UserID snowflake.ID, forCreateEv
 	}
 
 	out.Roles = []*APITypeRole{}
-	for _, v := range g.Roles {
+	roles, _ := g.Roles()
+	for _, v := range roles {
 		out.Roles = append(out.Roles, v.ToAPI())
 	}
 
@@ -749,13 +758,13 @@ func InitGuildStaging() {
 		ID:      84,
 		Name:    "A test",
 		OwnerID: 42,
-		Roles: map[string]*Role{
-			"84": &Role{
-				ID:          84,
-				Name:        "@everyone",
-				Permissions: GUILD_EVERYONE_DEFAULT_PERMS,
-			},
-		},
+		//Roles: map[string]*Role{
+		//	"84": &Role{
+		//		ID:          84,
+		//		Name:        "@everyone",
+		//		Permissions: GUILD_EVERYONE_DEFAULT_PERMS,
+		//	},
+		//},
 		//Members: map[string]*GuildMember{
 		//	"42": &GuildMember{UserID: 42, Roles: []snowflake.ID{84}},
 		//	"43": &GuildMember{UserID: 43, Roles: []snowflake.ID{84}},
@@ -763,6 +772,8 @@ func InitGuildStaging() {
 		Features: []string{GUILD_FEATURE_DISCOVERABLE},
 	}
 	guilds.Insert(g)
+	roles := DB.Core.C("roles")
+	roles.Insert(&Role{ID: 84, GuildID: 84, Name: "@everyone", Permissions: GUILD_EVERYONE_DEFAULT_PERMS})
 	g.AddMember(42, false)
 	g.AddMember(43, false)
 	chans := DB.Core.C("channels")

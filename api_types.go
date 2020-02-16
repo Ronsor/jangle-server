@@ -177,6 +177,7 @@ type APITypeGuildMember struct {
 // "Safe" Role type
 type APITypeRole struct {
 	ID          snowflake.ID `json:"id,string"`
+	GuildID	snowflake.ID `json:"-"`
 	Name        string       `json:"name"`
 	Color       int          `json:"color"`
 	Hoist       bool         `json:"hoist"`
