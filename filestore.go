@@ -40,7 +40,8 @@ func (b *BogusCDN) Init(opts ...interface{}) error {
 
 
 func (b *BogusCDN) PerformUpload(path string, pipe io.Reader) (string, error) {
-	os.MkdirAll(*flgFileServerPath + "/" + filepath.Dir(path), 0755)
+	err := os.MkdirAll(*flgFileServerPath + "/" + filepath.Dir(path), 0755)
+	if err != nil { return "", err }
 	file, err := os.Create(*flgFileServerPath + "/" + path)
 	if err != nil { return "", err }
 	_, err = io.Copy(file, pipe)

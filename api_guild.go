@@ -151,7 +151,10 @@ func InitRestGuild(r *router.Router) {
 			g.Features = *req.Features
 		}
 		if req.Icon != nil {
-			g.SetIcon(*req.Icon)
+			err := g.SetIcon(*req.Icon)
+			if err != nil {
+				panic(err)
+			}
 		}
 
 		err = g.Save()

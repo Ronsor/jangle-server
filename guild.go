@@ -512,7 +512,7 @@ func (g *Guild) CreateChannel(ch *Channel) (*Channel, error) {
 func (g *Guild) SetIcon(dataURL string) error {
 	c := DB.Core.C("guilds")
 	imgFp := fmt.Sprintf("%x", md5.Sum([]byte(dataURL)))
-	fullpath, err := ImageDataURLUpload(gFileStore, "/icons/" + g.ID.String() + "/" + imgFp + ".png", dataURL, ImageUploadOptions{MaxWidth: 1024, MaxHeight: 1024, ForcePNG: true})
+	fullpath, err := ImageDataURLUpload(gFileStore, "/icons/" + g.ID.String() + "/" + imgFp + ".png", dataURL, ImageUploadOptions{MaxWidth: 2048, MaxHeight: 2048, ForcePNG: true})
 	if err != nil { return err }
 	bp := path.Base(fullpath)
 	g.Icon = strings.TrimRight(bp, path.Ext(bp))

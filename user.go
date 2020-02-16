@@ -294,7 +294,7 @@ func (u *User) SetTag(username, discriminator string) error {
 func (u *User) SetAvatar(dataURL string) error {
 	c := DB.Core.C("users")
 	imgFp := fmt.Sprintf("%x", md5.Sum([]byte(dataURL)))
-	fullpath, err := ImageDataURLUpload(gFileStore, "/avatars/" + u.ID.String() + "/" + imgFp + ".png", dataURL, ImageUploadOptions{MaxWidth: 1024, MaxHeight: 1024, ForcePNG: true})
+	fullpath, err := ImageDataURLUpload(gFileStore, "/avatars/" + u.ID.String() + "/" + imgFp + ".png", dataURL, ImageUploadOptions{MaxWidth: 2048, MaxHeight: 2048, ForcePNG: true})
 	if err != nil { return err }
 	bp := path.Base(fullpath)
 	u.Avatar = strings.TrimRight(bp, path.Ext(bp))
