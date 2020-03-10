@@ -170,6 +170,8 @@ func GetUserByHttpRequest(c *fasthttp.RequestCtx, ctxvar string) (*User, error) 
 		return nil, fmt.Errorf("No authorization token supplied")
 	}
 	a := string(b)
+	a = strings.Replace(a, "Bot ", "", -1)
+	a = strings.Replace(a, "Bearer ", "", -1)
 	user, err := GetUserByToken(a)
 	if err != nil {
 		return nil, err
@@ -318,7 +320,7 @@ func InitUserStaging() {
 		ID:            42,
 		Username:      "test1",
 		Discriminator: "1234",
-		Email:         "test@localhost",
+		Email:         "test@localhost.localdomain",
 		PasswordHash:  util.CryptPass("hello"),
 		Flags:         USER_FLAG_STAFF | USER_FLAG_EARLYADOPTER,
 		Settings: &UserSettings{
@@ -329,7 +331,7 @@ func InitUserStaging() {
 		ID:            43,
 		Username:      "hello",
 		Discriminator: "4242",
-		Email:         "test2@localhost",
+		Email:         "test2@localhost.localdomain",
 		PasswordHash:  util.CryptPass("hello"),
 		Flags:         USER_FLAG_EARLYADOPTER,
 		Settings: &UserSettings{

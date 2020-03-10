@@ -5,12 +5,13 @@ import (
 	"math/rand"
 	"sync"
 
+	"jangled/util"
+
 	"github.com/bwmarrin/snowflake"
 	"github.com/fasthttp/router"
 	"github.com/fasthttp/websocket"
 	"github.com/valyala/fasthttp"
-
-	"jangled/util"
+	"github.com/globalsign/mgo/bson"
 )
 
 type gwSession struct {
@@ -26,13 +27,23 @@ type gwSession struct {
 
 func InitGateway(r *router.Router) {
 	log.Println("Init Gateway Module")
-	r.GET("/gateway", func(c *fasthttp.RequestCtx) {
+	gwEndpoint := func(c *fasthttp.RequestCtx) {
 		gw := "ws://" + string(c.Host()) + "/gateway_ws6"
 		if *flgGatewayUrl != "" {
 			gw = *flgGatewayUrl
 		}
-		util.WriteJSON(c, &responseGetGateway{URL: gw})
-	})
+		util.WriteJSON(c, bson.M{
+			"url": gw,
+			// It seems discord.js needs this
+			"session_start_limit": bson.M{
+				"reset_after": 3600,
+				"total": 0xFFFF,
+				"remaining": 0xFFFF,
+			},
+		})
+	}
+	r.GET("/gateway", gwEndpoint)
+	r.GET("/gateway/bot", gwEndpoint)
 
 	r.GET("/gateway_ws6/", MwRl(func(c *fasthttp.RequestCtx) {
 		if string(c.FormValue("v")) != "6" {
@@ -127,7 +138,7 @@ func InitGatewaySession(ws *websocket.Conn, ctx *fasthttp.RequestCtx) {
 			}
 
 			readyPkt.PrivateChannels = out
-
+			readyPkt.Relationships = []interface{}{}
 		}
 
 		codec.Send(ws, &gwPacket{

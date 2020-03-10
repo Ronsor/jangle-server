@@ -160,12 +160,13 @@ func (m *Message) ToAPI() (ret *APITypeMessage) {
 		MentionEveryone: m.MentionEveryone,
 		MentionRoles:    m.MentionRoles,
 		Attachments:     m.Attachments,
-		Embeds:          m.Embeds,
 		Nonce:           m.Nonce,
 		Pinned:          m.Pinned,
 		Type:            m.Type,
 		Flags:           m.Flags,
 	}
+
+	ret.Embeds = append([]*MessageEmbed{}, m.Embeds...)
 
 	if mem, err := m.Member(); err == nil {
 		ret.Member = mem.ToAPI()

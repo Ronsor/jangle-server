@@ -8,7 +8,7 @@ import (
 )
 
 // REST types
-
+// Deprecated
 type responseGetGateway struct {
 	URL string `json:"url"`
 }

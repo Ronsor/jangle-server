@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"encoding/json"
 
 	"jangled/util"
 
@@ -38,9 +39,9 @@ func InitRestUser(r *router.Router) {
 		Discriminator *string `json:"discriminator" validate:"omitempty,len=4"`
 		Password string `json:"password" validate:"min=1"`
 
-		Email *string `json:"email" validate:"omitempty,email"`
-		NewPassword *string `json:"new_password" validate:"omitempty,min=6"`
-		Avatar *string `json:"avatar" validate:"omitempty,datauri"`
+		Email *string `json:"email,omitempty" validate:"omitempty,email"`
+		NewPassword *string `json:"new_password,omitempty" validate:"omitempty,min=6"`
+		Avatar *string `json:"avatar,omitempty" validate:"omitempty,len=0|datauri"`
 	}
 
 	r.PATCH("/users/:uid", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
@@ -48,6 +49,7 @@ func InitRestUser(r *router.Router) {
 
 		var req APIReqPatchUsersUid
 		if err := util.ReadPostJSON(c, &req); err != nil {
+			b, _ := json.Marshal(req); log.Println(string(b))
 			println(err.Error())
 			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
 			return
@@ -74,9 +76,13 @@ func InitRestUser(r *router.Router) {
 		}
 
 		if req.Avatar != nil {
-			err := me.SetAvatar(*req.Avatar)
-			if err != nil {
-				panic(err)
+			if *req.Avatar != "" {
+				err := me.SetAvatar(*req.Avatar)
+				if err != nil {
+					panic(err)
+				}
+			} else {
+				me.Avatar = ""
 			}
 		}
 

@@ -17,7 +17,7 @@ func NoContentJSON(c *fasthttp.RequestCtx) {
 func ReadPostAny(c *fasthttp.RequestCtx, i interface{}, opts ...interface{}) error {
 	frm, err := c.Request.MultipartForm()
 	if err != nil { return ReadPostJSON(c, i, opts...) }
-	var m map[string]interface{}
+	var m = map[string]interface{}{}
 	for k, v := range frm.Value {
 		m[k] = v[0]
 	}
@@ -60,6 +60,7 @@ func ReadPostJSON(c *fasthttp.RequestCtx, i interface{}, opts ...interface{}) er
 }
 
 func WriteJSON(c *fasthttp.RequestCtx, i interface{}) error {
+	c.Response.Header.Set("Content-Type", "application/json")
 	b, e := json.Marshal(i)
 	if e != nil { return e }
 	_, e = c.Write(b)

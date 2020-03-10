@@ -93,6 +93,14 @@ func main() {
 	}
 
 	log.Printf("info: starting http server (addr=%s)", *flgListen)
+
+	for _, method := range []string{"GET", "POST", "PUT", "PATCH", "DELETE"} {
+		r.Handle(method, "/api/v7/*path", func (c *fasthttp.RequestCtx) {
+			c.Request.URI().SetPath(c.UserValue("path").(string))
+			r.Handler(c)
+		})
+	}
+
 	log.Fatal(fasthttp.ListenAndServe(*flgListen, MwAccCtl(r.Handler, "*")))
 	log.Println("info:", "shutting down...")
 }
