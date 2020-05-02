@@ -49,3 +49,27 @@ func (b *BogusCDN) PerformUpload(path string, pipe io.Reader) (string, error) {
 	file.Close()
 	return path, nil
 }
+
+type PutCDN struct {
+	client *fasthttp.Client
+}
+
+func (b *PutCDN) Init(opts ...interface{}) error {
+	b.client = &fasthttp.Client{}
+	return nil
+}
+
+func (b *PutCDN) PerformUpload(path string, pipe io.Reader) (string, error) {
+	req := fasthttp.AcquireRequest()
+	defer fasthttp.ReleaseRequest(req)
+	req.SetRequestURI(*flgCDNUploadBase + "/" + path)
+	req.SetBodyStream(pipe, -1)
+	req.Header.SetMethod("PUT")
+
+	resp := fasthttp.AcquireResponse()
+	defer fasthttp.ReleaseResponse(resp)
+
+	err := b.client.Do(req, resp)
+	if err != nil { return "", err }
+	return path, err
+}

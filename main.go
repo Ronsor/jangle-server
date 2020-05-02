@@ -13,7 +13,7 @@ import (
 	"github.com/vharitonsky/iniflags"
 )
 
-const VERSION = "version=0.1.2 GW-level=v6 API-level=v6,v7(?) \"I can't believe it's not Discord!\" Edition [prerelease]"
+const VERSION = "version=0.1.3 GW-level=v6 API-level=v6,v7(?) \"I can't believe it's not Discord!\" Edition [prerelease]"
 
 var (
 	flgListen     = flag.String("listen", "0.0.0.0:8081", "Listen address for API server")
@@ -90,6 +90,8 @@ func main() {
 	if *flgEnableFileServer {
 		gFileStore.Init(r)
 		log.Printf("info: initialized boguscdn")
+	} else {
+		gFileStore = &PutCDN{}
 	}
 
 	log.Printf("info: starting http server (addr=%s)", *flgListen)
