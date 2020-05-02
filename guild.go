@@ -509,6 +509,21 @@ func (g *Guild) CreateChannel(ch *Channel) (*Channel, error) {
 	return ch, nil
 }
 
+func (g *Guild) CreateInvite(i *Invite) (*Invite, error) {
+	i.ID = flake.Generate()
+	i.GuildID = g.ID
+	c := DB.Core.C("guildinvites")
+	err := c.Insert(i)
+	if err != nil {
+		return nil, err
+	}
+	return i, nil
+}
+
+func (g *Guild) Invites() ([]*Invite, error) {
+	return GetInvitesByGuild(g.ID)
+}
+
 func (g *Guild) SetIcon(dataURL string) error {
 	c := DB.Core.C("guilds")
 	imgFp := fmt.Sprintf("%x", md5.Sum([]byte(dataURL)))

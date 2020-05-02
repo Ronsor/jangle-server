@@ -80,6 +80,7 @@ func main() {
 	InitRestUser(r)
 	InitRestChannel(r)
 	InitRestGuild(r)
+	InitRestInvite(r)
 	InitRestAuth(r)
 	log.Printf("info: initialized rest api routes")
 

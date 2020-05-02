@@ -47,6 +47,9 @@ func InitDB() {
 	DB.Core.C("guildmembers").EnsureIndex(mgo.Index{Name: "idx_guildmember", Key: []string{"guild_id"}, Unique: false})
 	DB.Core.C("guildmembers").EnsureIndex(mgo.Index{Name: "idx_guildmember_deleted", Key: []string{"deleted"}, Sparse: true, Unique: false, ExpireAfter: 60 * time.Second})
 
+	DB.Core.C("guildinvites").EnsureIndex(mgo.Index{Name: "idx_guildinvites_guild", Key: []string{"guild_id"}, Sparse: true, Unique: false})
+	DB.Core.C("guildinvites").EnsureIndex(mgo.Index{Name: "idx_guildinvites_maxage", Key: []string{"max_age"}, Sparse: true, Unique: false, ExpireAfter: 60 * time.Second})
+
 	DB.Msg.C("msgs").EnsureIndex(mgo.Index{Name: "idx_pinned", Key: []string{"channel_id", "pinned"}})
 	DB.Msg.C("msgs").EnsureIndex(mgo.Index{Name: "idx_msgchannel", Key: []string{"channel_id"}})
 
