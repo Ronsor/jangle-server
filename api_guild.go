@@ -647,6 +647,31 @@ func InitRestGuild(r *router.Router) {
 		util.NoContentJSON(c)
 	}, RL_SETINFO)))
 
+	r.GET("/guilds/:gid/invites", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		gid := c.UserValue("gid").(string)
+		snow, err := snowflake.ParseString(gid)
+		if err != nil {
+			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
+			return
+		}
+		g, err := GetGuildByID(snow)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_GUILD)
+			return
+		}
+		if !g.GetPermissions(me).Has(PERM_MANAGE_GUILD) {
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
+			return
+		}
+
+		inv, _ := g.Invites()
+		out := []*APITypeInvite{}
+		for _, v := range inv { out = append(out, v.ToAPI()) }
+
+		util.WriteJSON(c, out)
+	}, RL_GETINFO)))
+
 	type APIReqPatchGuildsGidChannels []struct {
 		ID       snowflake.ID `json:"id,string"`
 		Position int          `json:"position"`

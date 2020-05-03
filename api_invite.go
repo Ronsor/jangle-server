@@ -14,7 +14,7 @@ func InitRestInvite(r *router.Router) {
 	log.Println("Init /invites endpoints")
 
 	r.GET("/invites/:code", MwRl(func(c *fasthttp.RequestCtx) {
-		code, err := snowflake.ParseString(c.UserValue("code").(string))
+		code, err := snowflake.ParseBase32([]byte(c.UserValue("code").(string)))
 		if err != nil {
 			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
 			return
@@ -29,9 +29,9 @@ func InitRestInvite(r *router.Router) {
 		util.WriteJSON(c, inv.ToAPI())
 	}, RL_GETINFO))
 
-	r.DELETE("/invites/:code", MwRl(func(c *fasthttp.RequestCtx) {
+	r.DELETE("/invites/:code", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
-		code, err := snowflake.ParseString(c.UserValue("code").(string))
+		code, err := snowflake.ParseBase32([]byte(c.UserValue("code").(string)))
 		if err != nil {
 			util.WriteJSONStatus(c, 400, APIERR_BAD_REQUEST)
 			return
@@ -57,6 +57,6 @@ func InitRestInvite(r *router.Router) {
 		}
 
 		util.WriteJSON(c, inv.ToAPI())
-	}, RL_DELOBJ))
+	}, RL_DELOBJ)))
 
 }

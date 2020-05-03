@@ -605,6 +605,60 @@ func InitRestChannel(r *router.Router) {
 		return
 	}, RL_RECVMSG)))
 
+	type APIReqPostChannelsCidInvites struct {
+		MaxAge int `json:"max_age"`
+		MaxUses int `json:"max_uses"`
+	}
+
+	r.POST("/channels/:cid/invites", MwTkA(MwRl(func(c *fasthttp.RequestCtx) {
+		me := c.UserValue("m:user").(*User)
+		cid := c.UserValue("cid").(string)
+		var req APIReqPostChannelsCidInvites
+		if util.ReadPostJSON(c, &req) != nil {
+			util.WriteJSONStatus(c, 400, &APIResponseError{0, "Malformed request body"})
+			return
+		}
+
+		csnow, err := snowflake.ParseString(cid)
+		if err != nil {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
+			return
+		}
+
+		ch, err := GetChannelByID(csnow)
+		if err != nil || !ch.IsGuild() {
+			util.WriteJSONStatus(c, 404, APIERR_UNKNOWN_CHANNEL)
+			return
+		}
+
+		gd, err := ch.Guild()
+		if err != nil {
+			panic(err)
+		}
+
+		if !ch.GetPermissions(me).Has(PERM_CREATE_INVITE) {
+			util.WriteJSONStatus(c, 403, APIERR_MISSING_PERMISSIONS)
+			return
+		}
+
+		inv := &Invite{
+			ChannelID: ch.ID,
+			MaxUses: req.MaxUses,
+		}
+
+		if req.MaxAge != 0 {
+			tm := time.Unix(time.Now().Unix() + int64(req.MaxAge), 0)
+			inv.MaxAge = &tm
+		}
+
+		inv, err = gd.CreateInvite(inv)
+		if err != nil {
+			panic(err)
+		}
+
+		util.WriteJSON(c, inv.ToAPI())
+	}, RL_NEWOBJ)))
+
 	r.PUT("/channels/:cid/messages/:mid/reactions/:emoji/:uid", MwTkA(func(c *fasthttp.RequestCtx) {
 		me := c.UserValue("m:user").(*User)
 		cid := c.UserValue("cid").(string)

@@ -54,7 +54,7 @@ func (i *Invite) IncrUses() error {
 
 func (i *Invite) ToAPI() *APITypeInvite {
 	out := &APITypeInvite{
-		Code: i.ID.String(),
+		Code: i.ID.Base32(),
 		CreatedAt: time.Unix(i.CreatedAt, 0),
 		Uses: i.Uses,
 		MaxUses: i.MaxUses,
