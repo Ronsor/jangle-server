@@ -394,7 +394,9 @@ func (g *Guild) SetMember(extra *GuildMember, opts ...interface{} /* checkBans, 
 		gm = &GuildMember{ID: flake.Generate(), GuildID: g.ID, UserID: extra.UserID, JoinedAt: time.Now().Unix(), Roles: []snowflake.ID{g.ID}}
 	}
 	var err error
-	// TODO: actually check bans if requested
+	if g.IsBanned(gm.UserID) {
+		return fmt.Errorf("BANNED")
+	}
 	if len(opts) > 1 && opts[1].(bool) {
 		err = c.Remove(bson.M{"user": gm.UserID, "guild_id": g.ID, "deleted": bson.M{"$exists": true}})
 		if err == nil || err == mgo.ErrNotFound {
