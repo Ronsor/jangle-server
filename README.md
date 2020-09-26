@@ -10,3 +10,9 @@ is provided in the hopes that it'll be useful to someone, somehow.
 #### General TODO
 
 1. ToAPI() *can* fail sometimes. We don't ever report this.
+
+#### Setup
+
+TODO: Finish this
+
+Requires a MongoDB 3.6+ instance. It must be part of a replica set.
