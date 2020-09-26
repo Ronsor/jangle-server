@@ -42,7 +42,7 @@ func InitGateway(r *router.Router) {
 			},
 		})
 	}
-	r.GET("/gateway", gwEndpoint)
+	r.GET("/gateway/", gwEndpoint)
 	r.GET("/gateway/bot", gwEndpoint)
 
 	r.GET("/gateway_ws6/", MwRl(func(c *fasthttp.RequestCtx) {

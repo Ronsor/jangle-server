@@ -2,7 +2,10 @@ The Jangle Server Core
 
 (C) 2019-2020 Ronsor Labs.
 
-This version serves CoreCord gateway level `v6` and REST API level `v6` and `v7`.
+This version partially handles Discord gateway level `v6` and REST API level `v6` and `v7`.
+
+Jangle was originally intended to be a competitor to Discord, but the project was dropped. This code
+is provided in the hopes that it'll be useful to someone, somehow.
 
 #### General TODO
 

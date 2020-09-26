@@ -99,6 +99,7 @@ func main() {
 
 	for _, method := range []string{"GET", "POST", "PUT", "PATCH", "DELETE"} {
 		r.Handle(method, "/api/v7/*path", func (c *fasthttp.RequestCtx) {
+			log.Printf("Legacy request: %s", c.UserValue("path").(string))
 			c.Request.URI().SetPath(c.UserValue("path").(string))
 			r.Handler(c)
 		})
